@@ -122,7 +122,7 @@ static void child_sig_handler(int sig) {
 #endif
 		child_can_exit = 1;
 		if (child_exit_status >= 0)
-			_Exit(child_exit_status);
+			exit(child_exit_status);
 	}
 }
 #else
@@ -652,7 +652,7 @@ SEXP mc_exit(SEXP sRes) {
 #ifdef MC_DEBUG
 	Dprintf("child %d: exiting\n", getpid());
 #endif
-	_Exit(res);
+	exit(res);
 	error("exit failed");
 	return R_NilValue;
 }
