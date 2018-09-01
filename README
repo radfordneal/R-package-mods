@@ -1,7 +1,0 @@
-This repository contains slightly modified versions of R packages for
-inclusion in the package repository for pqR (see pqR-project.org).
-
-These sometimes fix bugs, sometime make slight changes needed for pqR
-compatibility, and sometimes just change the "Depends:" to allow use
-with pqR (which has declared version 2.15.1, but many features from
-later R Core vesions).
