@@ -5,3 +5,7 @@ These sometimes fix bugs, sometime make slight changes needed for pqR
 compatibility, and sometimes just change the "Depends:" to allow use
 with pqR (which has declared version 2.15.1, but has many features
 from later R Core vesions).
+
+The modified versions has -909 added to their version number.  The
+originals are stored in branch 'originals', with the modified versions
+in 'master'.
