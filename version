@@ -1,0 +1,6 @@
+#!/bin/bash
+
+pkg=$1
+
+ls ~/pqR/repos*/src/contrib/${pkg}_* | sed "s/.*_//" | sed "s/.tar.gz//"
+

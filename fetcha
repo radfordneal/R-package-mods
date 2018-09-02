@@ -1,0 +1,6 @@
+#!/bin/bash
+
+pkg=$1
+version=$2
+
+wget https://cran.r-project.org/src/contrib/Archive/${pkg}/${pkg}_${version}.tar.gz
