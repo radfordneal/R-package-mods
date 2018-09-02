@@ -1,0 +1,92 @@
+Transportation problem (Minimal Cost)
+
+There are three sellers in different cities: CityA, CityB and CityC.
+They have 250, 130 and 250 tons of goods. 
+
+There are four buyers in CityD, CityE, CityF and CityG.
+They ordered 75, 230, 240 and 70 tons of goods for their production.
+
+The following costs of transportation for one ton of goods apply from one city 
+to another city:
+from\to  (D) (E) (F) (G)
+CityA (A) 10  20  15  20
+CityB (B) 20  15   5  10
+CityC (C) 10  15   5  15
+
+The stocks in city A are denoted with x_A
+The requests for city D are denoted with x_D
+The cost of transportation from one city to another is denoted by C_from_to,
+for example cost from CityC to CityF is C_C_F.
+
+## parameters
+x_A  = 250
+x_B  = 130
+x_C  = 250
+
+x_D  = 75
+x_E  = 230
+x_F  = 240
+x_G  = 70
+
+c_A_D = 10
+c_A_E = 20
+c_A_F = 15
+c_A_G = 20
+c_B_D = 20
+c_B_E = 15
+c_B_F = 5
+c_B_G = 10
+c_C_D = 10
+c_C_E = 15
+c_C_F = 5
+c_C_G = 15
+## end parameters
+
+The decision variables are tons transported from one city to another.
+They are denoted as x_from_to:
+X_A_D = tons from CityA to CityD, etc.
+
+## DECISION
+x_A_D
+x_A_E
+x_A_F
+x_A_G
+x_B_D
+x_B_E
+x_B_F
+x_B_G
+x_C_D
+x_C_E
+x_C_F
+x_C_G
+## END DECISION
+
+All orders should be performed while the transportation costs should be minimized.
+
+## COST
+x_A_D * c_A_D + x_A_E * c_A_E + x_A_F * c_A_F + x_A_G * c_A_G  + &
+x_B_D * c_B_D + x_B_E * c_B_E + x_B_F * c_B_F + x_B_G * c_B_G  + &
+x_C_D * c_C_D + x_C_E * c_C_E + x_C_F * c_C_F + x_C_G * c_C_G  
+## END COST
+
+
+The constraints are defined in terms of the transported amount from one 
+seller or to one buyer.
+
+For example:
+Amount transported from CityA cannot be more than 250 tons:
+X_A_D + X_A_E + X_A_F + X_A_G <= 250
+
+## Constraint
+x_A_D + x_A_E + x_A_F + x_A_G < x_A
+x_B_D + x_B_E + x_B_F + x_B_G < x_B
+x_C_D + x_C_E + x_C_F + x_C_G < x_C
+## END constraint
+
+## EQUALITIES
+x_A_D + x_B_D + x_C_D         =x_D
+x_C_E + x_B_E + x_A_E         =x_E
+x_A_F + x_B_F + x_C_F         =x_F
+x_A_G + x_B_G + x_C_G         =x_G
+## END EQUALITIES
+
