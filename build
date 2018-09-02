@@ -1,0 +1,5 @@
+#!/bin/bash
+
+pkg=$1
+
+~/pqR/obj/85-gccx/bin/R CMD build $pkg

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+pkg=$1
+
+cp ~/pqR/repos*/src/contrib/${pkg}_* .
