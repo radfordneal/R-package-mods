@@ -19,7 +19,7 @@ for (byrow in c(FALSE, TRUE)) {
 
   Y <- FileFloatMatrix(pathname, nrow=nrow(X), ncol=ncol(X), byrow=byrow)
   Y[] <- X[]
-  stopifnot(identical(X[], Y[]))
+  stopifnot(identical(X, Y[]))
 
   rr <- c(1,3)
   stopifnot(identical(X[rr,], Y[rr,]))
@@ -28,7 +28,7 @@ for (byrow in c(FALSE, TRUE)) {
   cc <- c(1,8,4,2:3)
   X[rr,cc] <- seq(length=length(rr)*length(cc))
   Y[rr,cc] <- X[rr,cc]
-  stopifnot(identical(X[], Y[]))
+  stopifnot(identical(X, Y[]))
 
   close(Y)
   rm(Y)
