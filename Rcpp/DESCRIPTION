@@ -1,6 +1,6 @@
 Package: Rcpp
 Title: Seamless R and C++ Integration
-Version: 0.10.6
+Version: 0.10.6-909
 Date: $Date: 2013-10-27 17:19:22 -0500 (Sun, 27 Oct 2013) $
 Author: Dirk Eddelbuettel and Romain Francois, with contributions 
  by Douglas Bates, John Chambers and JJ Allaire
@@ -49,7 +49,9 @@ Description: The Rcpp package provides R functions as well as a C++ library
    Additional documentation is available via the paper by Eddelbuettel and
  Francois (2011, JSS) paper and the book by Eddelbuettel (2013, Springer); 
  see 'citation("Rcpp")' for details.
-Depends: R (>= 3.0.0)
+ .
+ Some vignettes have been disabled for pqR compatibility
+Depends: R (>= 2.15.1)
 Imports: methods
 Suggests: RUnit, inline, rbenchmark, highlight
 VignetteBuilder: highlight
