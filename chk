@@ -2,4 +2,5 @@
 
 pkg=$1
 
-~/pqR/obj/85-gccx/bin/R CMD check ${pkg}_*-909.tar.gz
+_R_CHECK_FORCE_SUGGESTS_=FALSE \
+  ~/pqR/obj/85-gccx/bin/R CMD check ${pkg}_*-909.tar.gz
