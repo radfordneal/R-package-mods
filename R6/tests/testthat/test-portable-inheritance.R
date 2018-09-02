@@ -392,7 +392,11 @@ test_that("Inheritance is dynamic", {
 
   # BC doesn't contain AC, and it has less stuff in it, so it should be smaller
   # than AC.
-  expect_true(pryr::object_size(BC) < pryr::object_size(AC))
+  #
+  # Disabled for pqR, since pryr not available, and not guaranteed to be
+  # as expected in any case.
+
+  # expect_true(pryr::object_size(BC) < pryr::object_size(AC))
 })
 
 

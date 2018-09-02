@@ -5,6 +5,11 @@ expect_no_error <- function(expr) {
       err <<- TRUE
     }
   )
-  expect(!err, "Expected no error, but had error.")
+
+  # Changed for pqR to allow testthat that lacks 'expect'.
+  # Was:  expect(!err, "Expected no error, but had error.")
+
+  expect_false(err)
+
   invisible(NULL)
 }
