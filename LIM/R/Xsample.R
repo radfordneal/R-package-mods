@@ -14,8 +14,8 @@ Xsample <- function(lim, exact =NULL, ...) {
 
   if ( is.null(exact) )  { # Equalities: all equations are approximate
     Neq  <- 0
-    E    <- lim$A[]
-    F    <- lim$B[]
+    E    <- lim$A
+    F    <- lim$B
 
   } else  {               # Equalities and approximate equations
     if ( max(exact) > Napp )
