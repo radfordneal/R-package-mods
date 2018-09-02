@@ -1,5 +1,5 @@
 Package: BAS
-Version: 1.2.2
+Version: 1.2.2-909
 Date: 2016-06-10
 Title: Bayesian Model Averaging using Bayesian Adaptive Sampling
 Authors@R: c(person("Merlise", "Clyde", email="clyde@stat.duke.edu",
@@ -8,7 +8,7 @@ Authors@R: c(person("Merlise", "Clyde", email="clyde@stat.duke.edu",
 	   person("Quanli", "Wang", role="ctb"),
 	   person("Joyee", "Ghosh", role="ctb"),
 	   person("Yingbo", "Li", role="ctb"))
-Depends: R (>= 3.0), stats, graphics
+Depends: R (>= 2.15.1), stats, graphics
 Suggests: MASS
 Description: Package for Bayesian Model Averaging in linear models and
 	     generalized linear models using stochastic or
@@ -31,6 +31,7 @@ Description: Package for Bayesian Model Averaging in linear models and
 	     space may be used.  The user may force variables to always be included. 
 	     Details behind the sampling algorithm are provided in
 	     Clyde, Ghosh and Littman (2010) <http://dx.doi.org/10.1198/jcgs.2010.09049>.
+             "Depends" changed for pqR.
 License: GPL (>= 3)
 URL: http://www.r-project.org, http://github.com/merliseclyde/BAS
 Repository: CRAN
