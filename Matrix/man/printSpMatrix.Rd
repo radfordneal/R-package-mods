@@ -118,16 +118,5 @@ t(X2) # suppressing column names
 print(t(X2), col.names=TRUE)
 print(t(X2), zero.print = "", col.names="abbr. 1")
 print(t(X2), zero.print = "-", col.names="substring 2")
-
-\dontshow{% show() was slow in 0.9975-8 because of slow adjust="fancy"
-op <- options(max.print = 25000, width = 80)
-sink(print(tempfile()))
-M <- Matrix(0, 10000, 100)
-M[1,1] <- M[2,3] <- 3.14
-stopifnot((st <- system.time(show(M)))[1] < 1.0) # only 0.09 on cmath-3
-sink()
-st
-options(op)
-}
 }
 \keyword{print}

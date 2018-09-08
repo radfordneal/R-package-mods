@@ -90,7 +90,8 @@ grMeth <- "Arith"
     for(ng in getGroupMembers(grMeth)) {
         cat(ng, ": ")
         G <- get(ng)
-        t.tol <- if(ng == "/") 8e-16 else 0
+        # Need to set tolerance to work if long double is the same as double
+        t.tol <- if(ng == "/") 2e-14 else 0
         ## now using special all.equal() method!
         AEq <- function(a,b, ...) all.equal(a, b, tol=t.tol)
         for(v in ex.) {
