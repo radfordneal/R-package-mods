@@ -1,7 +1,13 @@
 
-R Under development (unstable) (2012-05-26 r59449) -- "Unsuffered Consequences"
-Copyright (C) 2012 The R Foundation for Statistical Computing
+pqR version 2.15.1 (2018-00-00), based on R 2.15.0 (2012-03-30)
+
+R 2.15.0 is Copyright (C) 2012 The R Foundation for Statistical Computing
 ISBN 3-900051-07-0
+
+Modifications to R in pqR are Copyright (C) 2013-2018 Radford M. Neal
+
+Some modules are from R-2.15.1 or later versions distributed by the R Core Team
+
 Platform: x86_64-unknown-linux-gnu (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
@@ -17,6 +23,9 @@ Type 'contributors()' for more information and
 Type 'demo()' for some demos, 'help()' for on-line help, or
 'help.start()' for an HTML browser interface to help.
 Type 'q()' to quit R.
+
+
+No helper threads, task merging enabled, uncompressed pointers.
 
 > pkgname <- "MASS"
 > source(file.path(R.home("share"), "R", "examples-header.R"))
@@ -3428,7 +3437,7 @@ detaching ‘package:survival’, ‘package:splines’
    3.81438456    3.73878664    3.51332581    3.39741115    3.47088608 
 .lin.StripS15 .lin.StripS16 .lin.StripS17 .lin.StripS18 .lin.StripS19 
    3.72895847    3.31863862    3.37938673    2.96452195    3.58468686 
-.lin.StripS20 .lin.StripS21        .lin22 
+.lin.StripS20 .lin.StripS21          .lin 
    3.39628029    3.36998872   -2.96015460 
 > 
 > st <- list(alpha = B[2:22], beta = B[23], rho = B[1])
@@ -3447,7 +3456,7 @@ alpha..lin.StripS13 alpha..lin.StripS14 alpha..lin.StripS15 alpha..lin.StripS16
             3.39741             3.47089             3.72896             3.31864 
 alpha..lin.StripS17 alpha..lin.StripS18 alpha..lin.StripS19 alpha..lin.StripS20 
             3.37939             2.96452             3.58469             3.39628 
-alpha..lin.StripS21         beta..lin22             rho.rho 
+alpha..lin.StripS21           beta..lin             rho.rho 
             3.36999            -2.96015             0.07776 
  residual sum-of-squares: 1.045
 
@@ -5219,7 +5228,7 @@ Achieved convergence tolerance: 4.324e-06
 > ### * <FOOTER>
 > ###
 > cat("Time elapsed: ", proc.time() - get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  14.809 0.117 20.658 0 0 
+Time elapsed:  2.396 0.096 2.492 0 0 
 > grDevices::dev.off()
 null device 
           1 

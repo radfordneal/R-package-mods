@@ -1,6 +1,6 @@
 Package: MASS
 Priority: recommended
-Version: 7.3-18
+Version: 7.3-18-909
 Date: 2012-05-28
 Revision: $Rev: 3167 $
 Depends: R (>= 2.14.0), grDevices, graphics, stats, utils
@@ -12,6 +12,7 @@ Authors@R: c(person("Brian", "Ripley", role = c("aut", "cre", "cph"),
         person("David", "Firth", role = "ctb"))
 Description: Functions and datasets to support Venables and Ripley,
         'Modern Applied Statistics with S' (4th edition, 2002).
+        Example output tweaked for different pqR handling of name suffixes.
 Title: Support Functions and Datasets for Venables and Ripley's MASS
 License: GPL-2 | GPL-3
 URL: http://www.stats.ox.ac.uk/pub/MASS4/
