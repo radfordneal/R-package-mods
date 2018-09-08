@@ -1,7 +1,7 @@
 Package: foreign
 Priority: recommended
-Version: 0.8-49
-Date: 2012-02-10
+Version: 0.8-49-909
+Date: 2014-03-23
 Title: Read Data Stored by Minitab, S, SAS, SPSS, Stata, Systat, dBase,
         ...
 Depends: R (>= 2.14.0), stats
@@ -18,7 +18,10 @@ Author: R-core members, Saikat DebRoy,
 Description: Functions for reading and writing data stored by statistical
         packages such as Minitab, S, SAS, SPSS, Stata, Systat, ...,
 	and for reading and writing dBase files.
+        This version for pqR has a bug fix for machines where
+        the C "char" type is unsigned (reported and fixed in 
+        later CRAN versions as well).
 LazyLoad: yes
 License: GPL (>= 2)
 BugReports: http://bugs.r-project.org
-Packaged: 2012-02-10 17:04:54 UTC; ripley
+Packaged: 2014-03-23 19:44:39 UTC; radford
