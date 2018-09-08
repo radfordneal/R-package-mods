@@ -10,7 +10,7 @@ local({
         v
     }
     assert(identical(st(quote(f(x))), "(f x)\n"))
-    assert(identical(st(quote((x+y)*z)), "(* (\"(\" (+ x y)) z)\n"))
+    assert(identical(st(quote(x*y+z)), "(+ (* x y) z)\n"))
     assert(identical(st(quote(-3)), "(- 3)\n"))
 })
 assert(identical(constantFold(quote(3)), 3))
