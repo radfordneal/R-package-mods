@@ -1,14 +1,18 @@
 
-R Under development (unstable) (2013-02-09 r61878) -- "Unsuffered Consequences"
-Copyright (C) 2013 The R Foundation for Statistical Computing
+pqR version 2.15.1 (2018-00-00), based on R 2.15.0 (2012-03-30)
+
+R 2.15.0 is Copyright (C) 2012 The R Foundation for Statistical Computing
 ISBN 3-900051-07-0
+
+Modifications to R in pqR are Copyright (C) 2013-2018 Radford M. Neal
+
+Some modules are from R-2.15.1 or later versions distributed by the R Core Team
+
 Platform: x86_64-unknown-linux-gnu (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
 You are welcome to redistribute it under certain conditions.
 Type 'license()' or 'licence()' for distribution details.
-
-  Natural language support but running in an English locale
 
 R is a collaborative project with many contributors.
 Type 'contributors()' for more information and
@@ -18,12 +22,15 @@ Type 'demo()' for some demos, 'help()' for on-line help, or
 'help.start()' for an HTML browser interface to help.
 Type 'q()' to quit R.
 
+
+No helper threads, task merging enabled, uncompressed pointers.
+
 > pkgname <- "boot"
 > source(file.path(R.home("share"), "R", "examples-header.R"))
 > options(warn = 1)
 > library('boot')
 > 
-> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> assign(".oldSearch", search(), pos = 'CheckExEnv')
 > cleanEx()
 > nameEx("Imp.Estimates")
 > ### * Imp.Estimates
@@ -496,7 +503,7 @@ Loading required package: splines
 
 Attaching package: 'survival'
 
-The following object is masked from 'package:boot':
+The following object(s) are masked from 'package:boot':
 
     aml
 
@@ -2016,8 +2023,8 @@ t3* 0.000000 -0.8862944    2.208945
 > 
 > ### * <FOOTER>
 > ###
-> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  19.343 0.03 19.437 0 0 
+> cat("Time elapsed: ", proc.time() - get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  6.849 0.017 6.865 0 0 
 > grDevices::dev.off()
 null device 
           1 
