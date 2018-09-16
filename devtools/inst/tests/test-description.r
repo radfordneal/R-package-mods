@@ -2,7 +2,7 @@ context("Documentation checks")
 
 test_that("invalid DESCRIPTION gives warning", {
   expect_message(load_all("testInvalidDescription"),
-    c("invalid DESCRIPTION", "fields missing"))
+    "Invalid DESCRIPTION")
 
   unload("testInvalidDescription")
 })
