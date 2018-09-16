@@ -1,3 +1,5 @@
+if (require("data.table")) {
+
 context("Equivalence (grouped)")
 
 srcs <- lahman_srcs("df", "dt", "postgres", "sqlite")
@@ -29,3 +31,5 @@ test_that("mutate the same regardless of tbl", {
       mutate(cyear = yearID - min(yearID) + 1)
   })
 })
+
+}

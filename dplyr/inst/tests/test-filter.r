@@ -1,3 +1,5 @@
+if (require("data.table")) {
+
 context("Filter")
 
 df <- expand.grid(a = 1:10, b = letters[1:10],
@@ -102,3 +104,5 @@ test_that("filter propagates attributes", {
   test2 <- test %.% filter(Date < ISOdate(2010, 01, 01, 5)) 
   expect_equal(test$Date[1:4], test2$Date)
 })
+
+}

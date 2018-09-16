@@ -1,3 +1,5 @@
+if (require("data.table")) {
+
 context("Mutate - windowed")
 
 df <- data.frame(x = 1:10, g = rep(c(1, 2), each = 5))
@@ -40,3 +42,5 @@ test_that("desc is correctly handled by window functions", {
 #   expect_error(df_sqlite %.% mutate(x > mean(x)), "does not support")
 #   expect_error(df_sqlite %.% mutate(r = row_number()), "does not support")
 # })
+
+}

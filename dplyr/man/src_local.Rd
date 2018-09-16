@@ -28,7 +28,7 @@ but instead one of the (currently three) constructors
 should be used.
 }
 \examples{
-if (require("Lahman")) {
+if (require("Lahman") && require("data.table")) {
 src_dt("Lahman")
 src_df("Lahman")
 

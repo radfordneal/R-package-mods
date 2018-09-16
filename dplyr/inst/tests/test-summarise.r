@@ -1,3 +1,5 @@
+if (require("data.table")) {
+
 context("Summarise")
 
 test_that("repeated outputs applied progressively", {
@@ -159,3 +161,4 @@ test_that("summarise fails on missing variables", {
   expect_error(summarise(mtcars, a = mean(notthear)), "binding not found")  
 })
 
+}

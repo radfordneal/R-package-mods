@@ -1,3 +1,5 @@
+if (require("data.table")) {
+
 context("Group by")
 
 df <- data.frame(x = rep(1:3, each = 10), y = rep(1:6, each = 5))
@@ -104,3 +106,4 @@ test_that("FactorVisitor handles NA. #183", {
   expect_equal(g$M.I, survey$M.I)
 })
 
+}

@@ -1,3 +1,5 @@
+if (require("data.table")) {
+
 context("Filter - windowed")
 
 df <- data.frame(x = 1:10, g = rep(c(1, 2), each = 5))
@@ -21,3 +23,5 @@ test_that("cumulative aggregates generate window function", {
     x %.% group_by(g) %.% filter(cumsum(x) > 10)
   })
 })
+
+}

@@ -1,3 +1,5 @@
+if (require("data.table")) {
+
 context("Mutate")
 
 test_that("repeated outputs applied progressively (data frame)", {
@@ -185,3 +187,4 @@ test_that("mutate fails on unsupported column type", {
   expect_error(mutate(group_by(df,g), date = strptime(created, "%Y/%m/%d")), "unsupported type for column")
 })
 
+}

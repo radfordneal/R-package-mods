@@ -1,3 +1,5 @@
+if (require("data.table")) {
+
 context("Equivalence (joins)") 
 
 dates <- Sys.Date()+1:4
@@ -36,3 +38,5 @@ test_that("semi join equivalent across all tbls", {
 test_that("anti join equivalent across all tbls", {
   compare_tbls(tbls, function(x) anti_join(x$c, x$d, by = c("x", "y")))
 })
+
+}

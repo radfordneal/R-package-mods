@@ -47,6 +47,8 @@ test_that("local arrange sorts missing values to end", {
   expect_true(na_last(arrange(df2, desc(d))$d))    
 })
 
+if (require("data.table")) {
+
 test_that("two arranges equivalent to one", {
   single <- arrange(df1, a, b)
   
@@ -69,3 +71,5 @@ test_that("arrange results same regardless of backend", {
   compare_tbls(tbls, function(x) x %.% arrange(desc(c), id), compare = equal_df)
   compare_tbls(tbls, function(x) x %.% arrange(desc(d), id), compare = equal_df)
 })
+
+}

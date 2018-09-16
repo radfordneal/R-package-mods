@@ -47,7 +47,7 @@ These functions support the comparison of results and
 timings across multiple sources.
 }
 \examples{
-if (require("Lahman") && require("microbenchmark")) {
+if (require("Lahman") && require("data.table") && require("microbenchmark")) {
 lahman_local <- lahman_srcs("df", "dt", "cpp")
 teams <- lapply(lahman_local, function(x) x \%.\% tbl("Teams"))
 

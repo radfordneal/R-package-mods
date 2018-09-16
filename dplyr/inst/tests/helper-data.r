@@ -1,4 +1,5 @@
-library(data.table)
+if (!require(data.table)) cat("Note: Package data.table not available\n")
+
 library(RSQLite)
 
 int_to_num <- function(x, y) {

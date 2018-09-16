@@ -1,3 +1,5 @@
+if (require("data.table")) {
+
 context("Select")
 
 df <- as.data.frame(as.list(setNames(1:26, letters)))
@@ -17,3 +19,4 @@ test_that("select does not loose grouping (#147)", {
   expect_equal(groups(grouped), list(quote(a)))
 })
 
+}
