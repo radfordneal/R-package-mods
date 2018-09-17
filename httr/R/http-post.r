@@ -13,12 +13,6 @@
 #'   Files can not be uploaded when \code{FALSE}.
 #' @export
 #' @examples
-#' b <- new_bin()
-#' POST(b)
-#' POST(b, body = "A simple text string")
-#' POST(b, body = list(a = 1, b = 2, c = 3))
-#' POST(b, body = list(a = 1, file = upload_file(system.file("CITATION"))))
-#'
 #' b2 <- "http://httpbin.org/post"
 #' POST(b2, body = "A simple text string")
 #' POST(b2, body = list(x = "A simple text string"))

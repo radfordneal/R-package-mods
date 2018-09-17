@@ -46,14 +46,6 @@
 #' GET("http://google.com/", path = "search")
 #' GET("http://google.com/", path = "search", query = c(q = "ham"))
 #'
-#' # See what GET is doing with requestb.in
-#' b <- new_bin()
-#' GET(b)
-#' GET(b, add_headers(a = 1, b = 2))
-#' GET(b, set_cookies(a = 1, b = 2))
-#' GET(b, authenticate("username", "password"))
-#' GET(b, verbose())
-#'
 #' # You might want to manually specify the handle so you can have multiple
 #' # independent logins to the same website.
 #' google <- handle("http://google.com")

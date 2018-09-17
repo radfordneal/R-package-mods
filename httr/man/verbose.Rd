@@ -8,10 +8,6 @@
   A verbose connection provides much more information about
   the flow of information between the client and server.
 }
-\examples{
-b <- new_bin()
-GET(b, verbose())
-}
 \seealso{
   Other config: \code{\link{accept_json}},
   \code{\link{accept_xml}}, \code{\link{add_headers}},

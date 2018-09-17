@@ -1,18 +1,19 @@
 Package: httr
 Type: Package
 Title: Tools for working with URLs and HTTP
-Version: 0.2
+Version: 0.2-909
 Author: Hadley Wickham <h.wickham@gmail.com>
 Maintainer: Hadley Wickham <h.wickham@gmail.com>
 Description: Provides useful tools for working with HTTP connections.
         Is a simplified wrapper built on top of RCurl.  It is much much
         less configurable but because it only attempts to encompass the
         most common operations it is also much much simpler.
+        Tweaked for pqR by removing new_bin, fixing test.
 Imports: RCurl (>= 1.95-0), stringr (>= 0.6.1), digest, tools
 Suggests: rjson, XML, testthat, png, jpeg, Rook
 License: MIT
 Collate: 'authenticate.r' 'config.r' 'content.r' 'cookies.r' 'handle.r'
-        'headers.r' 'proxy.r' 'insensitive.r' 'request-bin.r'
+        'headers.r' 'proxy.r' 'insensitive.r' 
         'http--request.r' 'response.r' 'url.r' 'verbose.r'
         'handle-pool.r' 'handle-url.r' 'http-browse.r' 'http-delete.r'
         'http-get.r' 'http-head.r' 'http-post.r' 'http-put.r' 'httr.r'

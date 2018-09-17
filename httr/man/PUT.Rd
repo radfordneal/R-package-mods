@@ -45,9 +45,6 @@
   Send PUT request to server.
 }
 \examples{
-b <- new_bin()
-PUT(b)
-
 POST("http://httpbin.org/put")
 PUT("http://httpbin.org/put")
 
