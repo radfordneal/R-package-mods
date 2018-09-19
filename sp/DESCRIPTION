@@ -1,5 +1,5 @@
 Package: sp
-Version: 1.1-0
+Version: 1.1-0-909
 Date: 2015-04-09
 Title: Classes and Methods for Spatial Data
 Authors@R: c(person("Edzer", "Pebesma", role = c("aut", "cre"),
@@ -12,7 +12,7 @@ Authors@R: c(person("Edzer", "Pebesma", role = c("aut", "cre"),
 			person("Michael", "Sumner", role = "ctb"),
 			person("Don", "MacQueen", role = "ctb"),
 			person("Josh", "O'Brien", role = "ctb"))
-Depends: R (>= 3.0.0)
+Depends: R (>= 2.15.1)
 Imports: methods, graphics, utils, lattice, grid
 Suggests: RColorBrewer, rgdal (>= 0.8-7), rgeos (>= 0.2-20), gstat
 Description: Classes and methods for spatial
@@ -20,6 +20,7 @@ Description: Classes and methods for spatial
   resides, for 2D or 3D data. Utility functions are provided, e.g. for
   plotting data as maps, spatial selection, as well as methods for
   retrieving coordinates, for subsetting, print, summary, etc.
+  For pqR, Depends changed, and vignette depending on rgdal disabled.
 License: GPL (>= 2)
 URL: https://r-forge.r-project.org/projects/rspatial/
         http://rspatial.r-forge.r-project.org/
