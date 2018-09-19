@@ -1,14 +1,17 @@
 Package: jpeg
-Version: 0.1-8
+Version: 0.1-8-909
 Title: Read and write JPEG images
 Author: Simon Urbanek <Simon.Urbanek@r-project.org>
 Maintainer: Simon Urbanek <Simon.Urbanek@r-project.org>
 Depends: R (>= 2.9.0)
-Description: This package provides an easy and simple way to read, write and display bitmap images stored in the JPEG format. It can read and write both files and in-memory raw vectors.
+Description: This package provides an easy and simple way to read,
+  write and display bitmap images stored in the JPEG format. It can
+  read and write both files and in-memory raw vectors.  
+  Modified for pqR to eliminate CAR(dco)=0 in C code, as this is not allowed.
 License: GPL-2 | GPL-3
 SystemRequirements: libjpeg
 URL: http://www.rforge.net/jpeg/
-Packaged: 2014-01-23 19:05:03 UTC; svnuser
+Packaged: 2016-10-04 14:45:30 UTC; radford
 NeedsCompilation: yes
 Repository: CRAN
 Date/Publication: 2014-01-23 20:17:07
