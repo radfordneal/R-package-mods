@@ -1,7 +1,7 @@
 Package: tictoc
 Title: Functions for timing R scripts, as well as implementations of
         Stack and List structures.
-Version: 1.0
+Version: 1.0-909
 Author: Sergei Izrailev
 Maintainer: Sergei Izrailev <sizrailev@collective.com>
 Description: This package provides the timing functions 'tic' and 'toc' that
@@ -11,8 +11,9 @@ Description: This package provides the timing functions 'tic' and 'toc' that
     class 'Stack', implemented as a vector, and class 'List', implemented as a
     list, both of which support operations 'push', 'pop', 'first', 'last' and
     'clear'.
+    Depends changed for pqR.
 URL: http://github.com/collectivemedia/tictoc
-Depends: R (>= 3.0.3), methods
+Depends: R (>= 2.15.1), methods
 License: Apache License (== 2.0) | file LICENSE
 Copyright: Copyright (C) Collective, Inc. | file inst/COPYRIGHTS
 LazyData: true
