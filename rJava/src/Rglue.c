@@ -163,7 +163,7 @@ HIDE void deserializeSEXP(SEXP o) {
 	    if (go) {
 	      _dbg(rjprintf(" - succeeded: %p\n", go));
 	      /* set the deserialized object */
-	      EXTPTR_PTR(o) = (SEXP) go;
+	      R_SetExternalPtrAddr(o,go);  /* PQR FIX */
 	      /* Note: currently we don't remove the serialized content, because it was created explicitly using .jcache to allow repeated saving. Once this is handled by a hook, we shall remove it. However, to assure compatibility TAG is always NULL for now, so we do clear the cache if TAG is non-null for future use. */
 	      if (EXTPTR_TAG(o) != R_NilValue) {
 		/* remove the serialized raw vector */
