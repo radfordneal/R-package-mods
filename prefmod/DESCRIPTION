@@ -1,7 +1,7 @@
 Package: prefmod
 Type: Package
 Title: Utilities to fit paired comparison models for preferences
-Version: 0.8-31
+Version: 0.8-31-909
 Date: 2012-05-14
 Author: Reinhold Hatzinger
 Maintainer: Reinhold Hatzinger <reinhold.hatzinger@wu.ac.at>
@@ -15,6 +15,7 @@ Description: Generates design matrix for analysing real paired
         and MNAR). Fits latent class (mixture) models for paired
         comparison, rating and ranking patterns using a nonparametric
         ML approach.
+        Tweaked for pqR.
 License: GPL
 LazyData: yes
 LazyLoad: yes

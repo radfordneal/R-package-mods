@@ -2,7 +2,7 @@
 NIgroupscontrib<-function(obj,lambda,X,nobj,ENV)
 {
      # set up design matrix by expanding basic matrix X with covariates
-     if (!is.null(names(obj$cov)))       # only in case of covariates
+     if (length(names(obj$cov))>0)       # only in case of covariates
         X<-do.call("cbind", lapply(1:length(obj$cov), function(i) X *obj$cov[i])) # design matrix for covariates
 
 
