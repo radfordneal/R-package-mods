@@ -194,7 +194,7 @@ SEXP emptyAlleles(SEXP genotypes, SEXP knownZero)
   int       * const out_ptr   = LOGICAL(result);
   int const cpysize = sizeof(int) * nAlleles;
 
-# pragma omp for
+# pragma omp parallel for
   for(int j=0; j < ncol; ++j)
   {
     int const v = j * nAlleles;
@@ -234,7 +234,7 @@ SEXP fractionsAndHet(SEXP genotypes, SEXP fractions)
   double const * const frac_ptr = REAL(fractions);
   double       * const out_ptr  = REAL(result);
 
-# pragma omp for
+# pragma omp parallel for
   for(int j=0; j < ncol; ++j)
   {
     int const * i_geno = geno_ptr + j*nrow;
@@ -320,7 +320,7 @@ SEXP relatednessFactors(SEXP inout, SEXP relatednessR, SEXP genotypes,
   double       * const out_ptr  = REAL(inout);
 
   // Finally loop.
-# pragma omp for
+# pragma omp parallel for
   for(int j=0; j < ncol; ++j)
   {
     int const *i_geno = geno_ptr + j*nrow; 
