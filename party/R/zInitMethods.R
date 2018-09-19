@@ -40,7 +40,7 @@ setMethod(f = "initialize", signature = "LinStatExpectCovarMPinv",
         .Object@expectation <- rep(0, p*q)
         .Object@covariance <- matrix(0, nrow = p*q, ncol = p*q)
         .Object@MPinv <- matrix(0, nrow = p*q, ncol = p*q)
-        .Object@rank <- as.double(0.0)
+        .Object@rank <- numeric(1)  # written to in C code
         .Object@svdmem <- new("svd_mem", p*q)
         .Object@dimension  <- p*q
         .Object@linearstatistic <- rep(0, p*q)

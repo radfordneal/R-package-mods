@@ -38,7 +38,7 @@ varctrl <- new("VariableControl")
 varctrl@teststat <- factor("quad", levels = c("max", "quad"))
 print(varctrl)
 lec <- new("LinStatExpectCovarMPinv", ncol(x), ncol(y))
-lec@rank <- 0
+lec@rank <- numeric(1)  # modified by C code
 lec@MPinv <- matrix(0, nrow = ncol(x) * ncol(y), ncol = ncol(x) * ncol(y))
 lec@svdmem <- new("svd_mem", ncol(x) * ncol(y))
 
@@ -57,7 +57,7 @@ varctrl <- new("VariableControl")
 varctrl@teststat <- factor("quad", levels = c("max", "quad"))
 print(varctrl)
 lec <- new("LinStatExpectCovarMPinv", ncol(x), ncol(y))
-lec@rank <- 0
+lec@rank <- numeric(1)  # modified by C code
 lec@MPinv <- matrix(0, nrow = ncol(x) * ncol(y), ncol = ncol(x) * ncol(y))
 lec@svdmem <- new("svd_mem", ncol(x) * ncol(y))
 
@@ -78,7 +78,7 @@ varctrl <- new("VariableControl")
 varctrl@teststat <- factor("quad", levels = c("max", "quad"))
 print(varctrl)
 lec <- new("LinStatExpectCovarMPinv", ncol(x), ncol(y))
-lec@rank <- 0
+lec@rank <- numeric(1)  # modified by C code
 lec@MPinv <- matrix(0, nrow = ncol(x) * ncol(y), ncol = ncol(x) * ncol(y))
 lec@svdmem <- new("svd_mem", ncol(x) * ncol(y))
 
@@ -126,7 +126,7 @@ varctrl <- new("VariableControl")
 varctrl@teststat <- factor("quad", levels = c("max", "quad"))
 print(varctrl)
 lec <- new("LinStatExpectCovarMPinv", ncol(x), ncol(y))
-lec@rank <- 0
+lec@rank <- numeric(1)  # modified by C code
 lec@MPinv <- matrix(0, nrow = ncol(x) * ncol(y), ncol = ncol(x) * ncol(y))
 lec@svdmem <- new("svd_mem", ncol(x) * ncol(y))
 

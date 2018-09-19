@@ -1,7 +1,7 @@
 Package: party
 Title: A Laboratory for Recursive Partytioning
 Date: 2014-08-18
-Version: 1.0-16
+Version: 1.0-16-909
 Authors@R: c(person("Torsten", "Hothorn", role = c("aut", "cre"),
                     email = "Torsten.Hothorn@R-project.org"),
              person("Kurt", "Hornik", role = "aut"),
@@ -22,6 +22,7 @@ Description: A computational toolbox for recursive partitioning.
   regression) employing parameter instability tests for split
   selection. Extensible functionality for visualizing tree-structured
   regression models is available.
+  Tweaked for pqR to fix invalid modifications in C code.
 Depends: R (>= 2.14.0), methods, grid, zoo, sandwich (>= 1.1-1),
         strucchange, stats, modeltools (>= 0.2-21)
 Imports: survival, coin
