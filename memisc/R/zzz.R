@@ -1,0 +1,36 @@
+car_recode <- function (var, recodes, as.factor.result, levels)
+  stop("package 'car' is not available")
+
+car_pkg <-"car"
+lme4_pkg <- "lme4"
+memisc_env <- environment()
+
+
+.onLoad <- function(lib,pkg){
+  options(codebook.chunk.size=1000)
+  options(Simulation.chunk.size=1000)
+  options(print.use.value.labels=TRUE)
+  options(show.max.obs=25)
+
+  if(requireNamespace(car_pkg,quietly = TRUE)){
+    car_recode <- getFromNamespace("recode",ns=car_pkg)
+    assign("car_recode",car_recode,envir=memisc_env)
+  }
+
+  options(coef.style="default")
+  options(baselevel.sep="/")
+  options(factor.style="($f): ($l)")
+  options(float.style="f")
+  options(signif.symbols=c(
+        "***"=.001,
+        "**"=.01,
+        "*"=.05
+    ))
+  options(labelled.factor.coerce.NA = FALSE)
+}
+
+
+.onUnload <- function(libpath)
+{
+    library.dynam.unload("memisc", libpath)
+}

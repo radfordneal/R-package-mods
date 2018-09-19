@@ -1,0 +1,1609 @@
+\documentclass[a4paper,twosided]{article}
+
+%\VignetteIndexEntry{PhyloSim}
+%\VignettePackage{phylosim}
+%\VignetteDepends{R.oo}
+
+% Packages
+\usepackage{times}
+
+% Definitions
+\newcommand{\psim}{{\tt PhyloSim}}
+\newcommand{\slan}{{\tt S}}
+\newcommand{\rlan}{{\tt R}}
+\newcommand{\lattice}{{\tt lattice}}
+\newcommand{\code}[1]{{\tt #1}}
+\setlength{\parindent}{0in}
+\setlength{\parskip}{.1in}
+\usepackage{fullpage}
+\usepackage{hyperref}
+
+% setup hyperref
+\hypersetup{
+	colorlinks=true,
+	linkcolor=blue
+}
+
+\title{The \psim\ package}
+\author{Botond Sipos and Tim Massingham}
+
+\usepackage{Sweave}
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+
+\section{Getting help}
+\begin{itemize}
+
+\item{\psim\ is extensively documented; the documentation of the \psim\ class (as invoked by \code{help("PhyloSim")}) is probably a good entry point for beginners and also contains some more basic examples.}
+
+\item{Serious users might consider reading all class documentations which provide more focused examples.}
+
+\item{Additional example scripts can be found at \href{http://github.com/sbotond/phylosim/tree/master/examples}{http://github.com/sbotond/phylosim/tree/master/examples}}
+
+\item{The \code{ll()} method list the methods and virtual field implemented in the immediate class of an object which is useful as ``proto-documentation''.}
+
+\end{itemize}
+
+\section{Basic examples}
+
+The following examples illustrate how to set up simple simulations.
+
+First load the package:
+<<echo=FALSE,results=hide>>=
+options(width=90)
+@
+<<echo=TRUE>>=
+library(phylosim)
+set.seed(833)
+@
+
+Create the tree files used in the basic examples:
+<<echo=TRUE>>=
+cat("((t1:0.3,t2:0.3):0.2,t3:0.1);",file="3taxa.nwk")
+cat("((t1:0.3,t2:0.3):0.2,(t3:0.1,t4:0.1):0.4);",file="4taxa.nwk")
+@
+
+
+\subsection{Simulating substitutions under the JC69 model}
+
+We will simulate the evolution of nucleotide sequences of length 50 along a tree
+with 3 tips under the JC69 model. The following two examples are essentially equivalent.
+
+\subsubsection{Compact example}
+
+<<echo=TRUE>>=
+Simulate(PhyloSim(
+	root.seq=sampleStates( NucleotideSequence(len=50,proc=list(list(JC69())) )),
+	phylo=read.tree("3taxa.nwk")
+))$alignment
+@
+
+\subsubsection{``Unrolled'' example}
+
+Construct the root sequence object:
+<<echo=TRUE>>=
+root.seq<-NucleotideSequence(length=50)
+@
+
+Print out the root sequence:
+<<echo=TRUE>>=
+print(root.seq)
+@
+Note, that all states are still undefined.
+
+Construct a JC69 substitution process object:
+<<echo=TRUE>>=
+p<-JC69()
+@
+
+Attach the substitution process to root sequence:
+<<echo=TRUE>>=
+attachProcess(root.seq,p)
+@
+
+Sample the site states from the equilibrium distribution of the JC69
+substitution process:
+<<echo=TRUE>>=
+sampleStates(root.seq)
+@
+
+Print out the root sequence, now with the sampled states:
+<<echo=TRUE>>=
+print(root.seq)
+@
+
+Read in tree from file using \code{APE}:
+<<echo=TRUE>>=
+tree<-read.tree("3taxa.nwk")
+@
+
+Plot the tree:
+
+<<echo=TRUE,fig=TRUE>>=
+plot(tree)
+@
+
+Construct a \psim\ object:
+<<echo=TRUE>>=
+sim<-PhyloSim()
+@
+
+Set the phylo object:
+<<echo=TRUE>>=
+sim$phylo<-tree
+@
+
+Set the root sequence:
+<<echo=TRUE>>=
+sim$rootSeq<-root.seq
+@
+
+Run the simulation:
+<<echo=TRUE>>=
+Simulate(sim)
+@
+
+Display the resulting alignment matrix:
+<<echo=TRUE>>=
+sim$alignment
+@
+
+\subsection{Simulating substitutions under the HKY model}
+
+Construct an HKY substitution process object:
+<<echo=TRUE>>=
+p<-HKY(rate.params=list( "Alpha"=10,"Beta"=2),
+                     base.freqs=c(4,3,2,1)/10
+   )
+@
+
+Get a plot of the instantaneous substitution matrix and equilibrium distribution of the \code{p} process (bubble plot):
+<<echo=TRUE,fig=TRUE>>=
+plot(p,scale=0.5)
+@
+
+Construct the root sequence, attach the substitution
+process to root sequence via the constructor and sample states:
+<<echo=TRUE>>=
+root.len50.seq<-NucleotideSequence(length=50,processes=list(list(p)))
+sampleStates(root.len50.seq)
+@
+
+Print out root sequence:
+<<echo=TRUE>>=
+print(root.len50.seq)
+@
+
+Construct a \psim\ object, set the phylo object and the root sequence:
+<<echo=TRUE>>=
+sim<-PhyloSim(
+	root.seq=root.len50.seq,
+	phylo=read.tree("3taxa.nwk")
+);
+@
+
+Run simulation:
+<<echo=TRUE>>=
+Simulate(sim)
+@
+
+Save the resulting alignment (fasta format):
+<<echo=TRUE>>=
+saveAlignment(sim,file="HKY_sim.fas")
+@
+<<echo=FALSE>>=
+unlink("HKY_sim.fas")
+@
+
+Plot the alignment alongside the tree (including sequences at ancestral nodes):
+<<echo=TRUE,fig=TRUE,width=180,height=40>>=
+plot(sim,num.pages=1)
+@
+
+\subsection{Simulating among-sites rate variation}
+
+\subsubsection{Simulating under the discrete gamma (GTR+d$\Gamma$) model}
+
+Construct a GTR subsection process object:
+
+<<echo=TRUE>>=
+         p<-GTR(
+                     rate.params=list(
+                             "a"=1, "b"=2, "c"=3,
+                             "d"=1, "e"=2, "f"=3
+                     ),
+                     base.freqs=c(2,2,1,1)/6
+             )
+@
+
+Summary of object \code{p}:
+<<echo=TRUE>>=
+summary(p)
+@
+
+
+Construct the root sequence, attach substitution process:
+<<echo=TRUE>>=
+root.seq<-NucleotideSequence(length=50,processes=list( list(p) ))
+@
+
+Sample rate multipliers from a discrete gamma distribution with 4 categories and
+shape parameter 0.5:
+
+<<echo=TRUE>>=
+plusGamma(root.seq,p,0.5)
+@
+
+Get the sampled rate multipliers:
+<<echo=TRUE>>=
+getRateMultipliers(root.seq,p);
+@
+
+Construct the \psim\ object, sample states and set the phylo object:
+<<echo=TRUE>>=
+sim<-PhyloSim(
+	root.seq=sampleStates(root.seq),
+	phylo=read.tree("3taxa.nwk")
+)
+@
+
+Run the simulation:
+<<echo=TRUE>>=
+Simulate(sim)
+@
+
+Plot the alignment alongside the tree, skip sequences at ancestral nodes:
+<<echo=TRUE,fig=TRUE,width=180,height=40>>=
+plot(sim,num.pages=1,plot.ancestors=FALSE)
+@
+
+Save the resulting alignment, omitting sequences at internal nodes:
+<<echo=TRUE>>=
+saveAlignment(sim,file="Gamma_sim.fas",skip.internal=TRUE)
+@
+<<echo=FALSE,results=hide>>=
+file.remove("Gamma_sim.fas")
+@
+
+
+\subsubsection{Simulating under the invariants and discrete gamma (GTR+I+d$\Gamma$) model}
+
+We will reuse the root sequence object and GTR object from the previous example. The process is already attached, but we need to clear the states to have a new root sequence.
+
+Clear the states of the root sequence object and sample a set of new states:
+<<echo=TRUE>>=
+clearStates(root.seq)
+sampleStates(root.seq)
+@
+
+Sample rate multipliers from a +I+d$\Gamma$ model:
+<<echo=TRUE>>=
+plusInvGamma(root.seq,p,pinv=0.8,shape=0.5)
+@
+
+Deal with the rest of the simulation (note that for variety we use a random coalescent tree in this example):
+<<echo=TRUE,fig=TRUE,width=180,height=40>>=
+sim<-Simulate(
+	PhyloSim(
+		root.seq=root.seq,
+		phylo=rcoal(3)
+	)
+)
+plot(sim,num.pages=1,plot.ancestors=FALSE)
+@
+
+Save the resulting alignment, skip sequences from internal nodes:
+<<echo=TRUE>>=
+saveAlignment(sim,file="InvGamma_sim.fas",skip.internal=TRUE)
+@
+<<echo=FALSE,results=hide>>=
+file.remove("InvGamma_sim.fas")
+@
+
+\subsection{Simulating indels}
+
+\subsubsection{Insertion and deletions having the same length distribution}
+
+Set up the substitution process and the root sequence:
+<<echo=TRUE>>=
+p<-JC69()
+root.seq<-NucleotideSequence(len=50,processes=list(list(p)))
+sampleStates(root.seq)
+@
+
+Construct a deletion process proposing deletions with rate 0.25 according to a discrete length 
+distribution:
+<<echo=TRUE>>=
+ d<-DiscreteDeletor(
+                     rate=0.25,
+                     sizes=c(1,2),
+                     probs=c(1/2,1/2)
+   )
+@
+
+Construct an insertion process proposing insertions with rate 0.25 according to a discrete length 
+distribution:
+<<echo=TRUE>>=
+ i<-DiscreteInsertor(
+                     rate=0.25,
+                     sizes=c(1,2),
+                     probs=c(1/2,1/2)
+   )
+@
+
+Set the template sequence for the insertion process:
+<<echo=TRUE>>=
+i$templateSeq<-NucleotideSequence(length=2,processes=list( list(p) ))
+@
+
+The states of the template sequence are undefined.
+The actual states will be sampled from the equilibrium distribution of the attached substitution process 
+before performing the insertion.
+
+Attaching the indel processes:
+<<echo=TRUE>>=
+attachProcess(root.seq,d)
+attachProcess(root.seq,i)
+@
+
+Construct the \psim\ object, set the phylo object (random coalescent tree for three taxa) and run the simulation:
+<<echo=TRUE>>=
+sim<-Simulate(PhyloSim(
+	root.seq=root.seq,
+	phylo=rcoal(3)
+))
+@
+
+Plot the alignment alongside the tree, skip sequences at ancestral nodes:
+<<echo=TRUE,fig=TRUE,width=180,height=40>>=
+plot(sim,num.pages=1,plot.ancestors=FALSE)
+@
+
+Save the resulting alignment, skip sequences from internal nodes:
+<<echo=TRUE>>=
+saveAlignment(sim,file="indel1_sim.fas",skip.internal=TRUE)
+@
+<<echo=FALSE,results=hide>>=
+file.remove("indel1_sim.fas")
+@
+
+\subsubsection{Insertion and deletions having different length distributions}
+
+The following code reuses the objects constructed in the previous example to simulate 
+deletions and insertions with different length distributions.
+
+Construct a new insertion process proposing insertions of \code{C}s with rate 0.5 according to a discrete length 
+distribution:
+<<echo=TRUE>>=
+ i2<-DiscreteInsertor(
+                     rate=0.25,
+                     sizes=c(1,2,3,4),
+                     probs=c(1,2,3,4)/10,
+		     template.seq=NucleotideSequence(string="C")	
+   )
+@
+
+Clear the states of the root sequence object:
+<<echo=TRUE>>=
+clearStates(root.seq)
+@
+
+Define a new set of processes (\code{p} - substitution, \code{d} - deletion, \code{i2} - 
+the new insertion process) for the root sequence using the \code{processes} virtual field:
+<<echo=TRUE>>=
+root.seq$processes<-list(list(i2, d, p))
+@
+
+Construct the \psim\ object, sample states, set the phylo object and run the simulation:
+<<echo=TRUE>>=
+sim<-Simulate(PhyloSim(
+	root.seq=sampleStates(root.seq),
+	phylo=read.tree("3taxa.nwk")
+))
+@
+
+Plot the alignment alongside the tree, skip sequences at ancestral nodes:
+<<echo=TRUE,fig=TRUE,width=180,height=40>>=
+plot(sim,num.pages=1,plot.ancestors=FALSE)
+@
+
+Save the resulting alignment, skip sequences from internal nodes:
+<<echo=TRUE>>=
+saveAlignment(sim,file="indel2_sim.fas",skip.internal=TRUE)
+@
+<<echo=FALSE,results=hide>>=
+file.remove("indel2_sim.fas")
+@
+
+\subsubsection{Simulating indels under selective constraints}
+
+Set up the substitution process and the root sequence:
+<<echo=TRUE>>=
+p<-JC69()
+root.seq<-NucleotideSequence(len=100,processes=list(list(p)))
+sampleStates(root.seq)
+@
+
+Construct a deletion process proposing deletions with rate 1 according to a discrete length
+distribution:
+<<echo=TRUE>>=
+d<-DiscreteDeletor(
+                     rate=1,
+                     sizes=c(1,2,3),
+                     probs=c(3/6,2/6,1/6)
+)
+@
+
+Construct an insertion process proposing insertions with rate 1 according to a discrete length
+distribution:
+<<echo=TRUE>>=
+i<-DiscreteInsertor(
+                     rate=1,
+                     sizes=c(1,2,3),
+                     probs=c(3/6,2/6,1/6)
+)
+@
+
+Set the template sequence for the insertion process:
+<<echo=TRUE>>=
+i$templateSeq<-NucleotideSequence(length=2,processes=list( list(p) ))
+@
+
+Attaching the indel processes:
+<<echo=TRUE>>=
+attachProcess(root.seq,d)
+attachProcess(root.seq,i)
+@
+
+Set deletion tolerance values:
+<<echo=TRUE>>=
+setDeletionTolerance(root.seq,d,0.08 + c(1/2:51,1/51:2))
+@
+
+Plot deletion tolerance values:
+<<echo=TRUE,fig=TRUE>>=
+plotParametersAtSites(root.seq,d,"deletion.tolerance")
+@
+
+Set insertion tolerance values:
+<<echo=TRUE>>=
+setInsertionTolerance(root.seq,i,0.08 + c(1/2:51,1/51:2))
+@
+
+Construct the PhyloSim object, read phylo object from file:
+<<echo=TRUE>>=
+sim<-Simulate(PhyloSim(
+        root.seq=root.seq,
+        phylo=read.tree("4taxa.nwk")
+))
+@
+
+Plot the alignment alongside the tree, skip sequences at ancestral nodes:
+<<echo=TRUE,fig=TRUE,width=180,height=80>>=
+plot(sim,plot.ancestors=FALSE)
+@
+
+Save the resulting alignment, skip sequences from internal nodes:
+<<echo=TRUE>>=
+saveAlignment(sim,file="indel3_sim.fas",skip.internal=TRUE)
+@
+<<echo=FALSE,results=hide>>=
+file.remove("indel3_sim.fas")
+@
+
+\subsection{Simulating partitions}
+
+The following example demonstrates how to use the processes and site- and process-specific 
+parameters to simulate ``partitions'' with different properties.
+
+We will simulate four partitions:
+
+\begin{itemize}
+
+\item{Partition 1: sites in range \code{1:25} evolving by JC+d$\Gamma$ with a shape parameter $\alpha=1$}
+\item{Partition 2: sites in range \code{26:50} evolving by JC+d$\Gamma$ with a shape parameter $\alpha=0.5$}
+\item{Partition 3: sites in range \code{51:75} evolving by HKY+d$\Gamma$ with a shape parameter $\alpha=1$}
+\item{Partition 4: sites in range \code{76:100} evolving by HKY+d$\Gamma$ with a shape parameter $\alpha=0.5$}
+
+\end{itemize}
+
+First construct two substitution process objects:
+<<echo=TRUE>>=
+jc69<-JC69()
+hky<-HKY(rate.params=list( "Alpha"=5,"Beta"=2),
+                     base.freqs=c(4,3,2,1)/10
+      )
+@
+
+Construct a root sequence object of length 100:
+<<echo=TRUE>>=
+root.seq<-NucleotideSequence(length=100)
+@
+
+Attach process \code{jc69} to range \code{1:50}:
+<<echo=TRUE>>=
+attachProcess(root.seq,jc69,1:50)
+@
+
+Attach process \code{hky} to range \code{51:100}:
+<<echo=TRUE>>=
+attachProcess(root.seq,hky,51:100)
+@
+
+Sample rate multipliers in the four partitions:
+<<echo=TRUE>>=
+plusGamma(root.seq,jc69,1,1:25)
+plusGamma(root.seq,jc69,0.5,26:50)
+
+plusGamma(root.seq,hky,1,51:75)
+plusGamma(root.seq,hky,0.5,76:100)
+@
+
+Construct the \psim\ object, sample states, set root sequence, set the phylo object (random coalescent tree for three taxa) and run the simulation:
+<<echo=TRUE>>=
+sim<-Simulate(PhyloSim(
+	root.seq=sampleStates(root.seq),
+	phylo=rcoal(3)
+))
+@
+
+Plot the alignment alongside the tree, skip sequences at ancestral nodes:
+<<echo=TRUE,fig=TRUE,width=180,height=40>>=
+plot(sim,num.pages=1,plot.ancestors=FALSE)
+@
+
+\subsection{Simulating heterotachy}
+
+Set up the substitution process:
+<<echo=TRUE>>=
+p<-F84(base.freqs=c(1,2,3,4));
+p$kappa<-1;
+@
+
+Set up the root sequence:
+<<echo=TRUE>>=
+root.seq<-NucleotideSequence(length=50,processes=list(list(p)));
+@
+
+Sample the rate multipliers from a +d$\Gamma$ model with shape parameter 1.0:
+<<echo=TRUE>>=
+plusGamma(root.seq,p,1)
+@
+
+Read a tree from file:
+<<echo=TRUE>>=
+tree<-read.tree("4taxa.nwk")
+@
+
+
+Construct the \psim\ object, sample states, set root sequence, and set the phylo object:
+<<echo=TRUE>>=
+sim<-PhyloSim(
+	root.seq=sampleStates(root.seq),
+	phylo=tree
+)
+@
+
+A ``node hook'' is a function which accepts a \code{Sequence} object
+through the named argument ``seq'' and returns a \code{Sequence} object.
+After simulating the branch leading to the node, the resulting
+\code{Sequence} object is passed to the node hook and the returned object
+is used to simulate the downstream branches.
+
+Create a node hook function which will create heterotachy by resampling the site rates 
+from the +d$\Gamma$ model with shape parameter 1.0:
+<<echo=TRUE>>=
+node.hook <- function(seq) {
+
+	if(!isAttached(seq$sites[[1]],p)){
+		return(seq);
+	}
+
+	cat("Resampling rate multipliers!\n");
+	plusGamma(seq,p,1)
+	return(seq)
+}
+@
+
+Plot the \psim\ object:
+<<echo=TRUE,fig=TRUE>>=
+plot(sim)
+@
+
+{Notice that node 6 is the ancestor of taxa \code{t1} and \code{t2}.}
+
+Attach the hook to node 6:
+<<echo=TRUE>>=
+attachHookToNode(sim, node = 6, fun = node.hook)
+@
+
+Run the simulation:
+<<echo=TRUE>>=
+Simulate(sim)
+@
+
+Plot the alignment alongside the tree, skip sequences at ancestral nodes:
+<<echo=TRUE,fig=TRUE,width=180,height=40>>=
+plot(sim,num.pages=1,plot.ancestors=FALSE)
+@
+
+\subsection{Simulating many replicates}
+
+Constructing \code{Sequence} objects with a large number of sites is expensive, so it is a good idea to do that outside the cycle when simulating many replicates with the same root sequence length.
+
+Reusing the root sequence object is easy, but do not forget to do the modifications needed to get independent simulations (e.g. clearing the states of the root sequence, resampling the rate multipliers).
+
+The following code illustrates how to simulate many replicates under the JC69+d$\Gamma$ model.
+
+Construct the root sequence object and attach the substitution process:
+<<echo=TRUE>>=
+p<-JC69();
+root.seq<-NucleotideSequence(length=10)
+attachProcess(root.seq,p)
+@
+
+Read the required phylogeny from file (this will remain fixed in the simulated replicates):
+<<echo=TRUE>>=
+tree<-read.tree("3taxa.nwk");
+@
+
+Simulate three replicates. Note that the states are cleared and resampled; the rate multipliers are resampled as well. The resulting alignments are stored in files aln\_1.fas, aln\_2.fas, aln\_3.fas.
+<<echo=TRUE>>=
+for(i in 1:3){
+	cat(paste("\n\nSimulating replication ",i,"\n\n",sep=""))	
+
+	clearStates(root.seq)
+	plusGamma(root.seq,p,0.25)
+	sampleStates(root.seq)
+
+	sim<-Simulate(PhyloSim(
+		root.seq=root.seq,
+		phylo=tree	
+	))	
+	
+	saveAlignment(sim,file=paste("aln_",i,".fas",sep=""))
+}
+@
+
+<<echo=FALSE>>=
+unlink("aln_1.fas");
+unlink("aln_2.fas");
+unlink("aln_3.fas");
+@
+
+\subsection{Simulating many replicates in parallel}
+
+The the speed of the above method for simulating replicates can be improved on a multicore machine by running
+many replicates in parallel by using the {\tt mclapply} method from the {\tt parallel} package (currently not available 
+on Windows operating systems).
+
+Under default settings, the {\tt mclapply} method launches one replication per core and this approach needs enough memory to run all
+of them in parallel.
+
+The following code illustrates how to simulate many replicates in parallel under the JC69+d$\Gamma$ model.
+
+Construct the root sequence object and attach the substitution process:
+<<echo=TRUE>>=
+p<-JC69();
+root.seq<-NucleotideSequence(length=50)
+attachProcess(root.seq,p)
+@
+
+Read the required phylogeny from file (this will remain fixed in the simulated replicates):
+<<echo=TRUE>>=
+tree<-read.tree("3taxa.nwk");
+@
+
+Function to simulate a single replication: 
+<<echo=TRUE>>=
+sim.replicate<-function(i){
+        name<-paste("replication_",i,sep="")
+        clearStates(root.seq)
+        plusGamma(root.seq,p,0.25)
+        sampleStates(root.seq)
+
+        sim<-Simulate(PhyloSim(
+                name=name,
+                root.seq=root.seq,
+                phylo=tree,
+        ),
+            quiet=TRUE
+        )
+
+        saveAlignment(sim,file=paste("aln_",i,".fas",sep=""))
+        return(sim)
+        # return(TRUE)
+}
+@
+
+Note that the states are cleared and resampled; the rate multipliers 
+are resampled as well. The resulting alignments are stored in files aln\_1.fas, aln\_2.fas, alni\_3.fas.
+
+Memory can be saved by throwing away the objects generated by the replication by returning {\tt TRUE} (or any other fixed value) from the
+{\tt sim.replicate} function.
+
+
+Load the {\tt parallel} package if available:
+<<echo=TRUE>>=
+have.mcore <-  is.element("parallel", installed.packages()[,1])
+
+if(have.mcore){
+    library(parallel)
+}
+@
+
+Run replicates in parallel, print the resulting \psim objects:
+<<echo=TRUE>>=
+if(have.mcore){
+    nr.replicates<-3
+    res.objects<-mclapply(1:nr.replicates, sim.replicate)
+    print(res.objects)
+}
+@
+
+Print one of the resulting alignments:
+<<echo=TRUE>>=
+if(have.mcore){
+    print(res.objects[[1]]$alignment)
+} 
+
+@
+
+<<echo=FALSE>>=
+unlink("aln_1.fas");
+unlink("aln_2.fas");
+unlink("aln_3.fas");
+
+unlink("3taxa.nwk");
+unlink("4taxa.nwk");
+@
+
+\section{Advanced examples}
+
+Creating the tree file used in the advanced examples:
+<<echo=TRUE>>=
+cat("(((t2:0.1231,t4:0.1231):0.2131,(t3:0.0284,t5:0.0284):0.3078):0.1698,t1:0.5060);",file="smalldemotree.nwk")
+@
+
+\subsection{Simulating ``domains'' and heterogeneous evolution}
+
+The following code illustrates how to set up a more complicated simulation of amino acid sequences involving ``domains'' and heterogeneous evolution.
+
+Use the \code{ll()} method to list the methods and virtual fields implemented in the \code{Site} class:
+<<echo=TRUE>>=
+ll(Site())
+@
+
+Enable the ``fast \& careless mode'':
+<<echo=TRUE>>=
+PSIM_FAST <- TRUE
+@
+Construct substitution process objects:
+<<echo=TRUE>>=
+wag <- WAG()
+jtt <- JTT()
+lg <- LG()
+pam <- PAM()
+@
+Summary of the object \code{wag}:
+<<echo=TRUE>>=
+summary(wag)
+@
+Get a plot of the instantaneous substitution matrix and equilibrium distribution of the \code{wag} process (bubble plot):
+<<echo=TRUE,fig=TRUE>>=
+plot(wag, scale = 0.8)
+@
+
+Construct a continuous deletor process:
+<<echo=TRUE>>=
+cont.del <- ContinuousDeletor(rate = 0.6, max.length = 10, 
+    dist = expression(rnorm(1, mean = 5, sd = 3)))
+@
+Construct the template sequence for the \code{cont.ins.lg} insertion process:
+<<echo=TRUE>>=
+templ.seq.wag <- AminoAcidSequence(length = 10)
+@
+
+Clone the template sequence for the \code{cont.ins.wag} process:
+<<echo=TRUE>>=
+templ.seq.lg <- clone(templ.seq.wag)
+@
+
+Construct continuous insertor process object \code{cont.ins.wag}:
+<<echo=TRUE>>=
+cont.ins.wag <- ContinuousInsertor(rate = 0.6, max.length = 10, 
+    dist = expression(rnorm(1, mean = 5, sd = 3)))
+@
+
+Construct continuous insertor process object \code{cont.ins.lg}:
+<<echo=TRUE>>=
+cont.ins.lg <- ContinuousInsertor(rate = 0.6, max.length = 10, 
+    dist = expression(rnorm(1, mean = 5, sd = 3)))
+@
+
+Set up the template sequences for the insertion processes:
+<<echo=TRUE>>=
+processes.site.wag<-list(wag, cont.ins.wag, cont.del)
+processes.site.lg<-list(lg, cont.ins.lg, cont.del)
+
+templ.seq.wag$processes <- list(processes.site.wag)
+templ.seq.lg$processes <- list(processes.site.lg)
+@
+
+Now the \code{cont.ins.lg} process samples the states from the equilibrium distribution of the \code{LG} model and \code{cont.ins.wag} samples the states from the \code{WAG} model.
+
+Disabling write protection for the insertion processes:
+<<echo=TRUE>>=
+cont.ins.wag$writeProtected <- FALSE
+cont.ins.lg$writeProtected <- FALSE
+@
+
+Set the template sequence for the insertion processes:
+<<echo=TRUE>>=
+cont.ins.wag$templateSeq <- templ.seq.wag
+cont.ins.lg$templateSeq <- templ.seq.lg
+@
+
+
+Setting up the insert hook for the insertion processes:
+
+Insert hook functions are called just before inserting the sequence generated by the insertion process.
+This function allows for arbitrary modifications to be made to the inserted sequence object. In this case the
+insert hook functions sample the site-process specific rate multipliers of the substitution processes from an invariants plus discrete gamma (+I+d$\Gamma$) model:
+
+<<echo=TRUE>>=
+cont.ins.wag$insertHook <- function(seq, target.seq, event.pos, 
+    insert.pos) {
+    plusInvGamma(seq, process = wag, pinv = 0.1, shape = 1)
+    return(seq)
+}
+cont.ins.lg$insertHook <- function(seq, target.seq, event.pos, 
+    insert.pos) {
+    plusInvGamma(seq, process = lg, pinv = 0.1, shape = 1)
+    return(seq)
+}
+@
+
+Now the processes are in place, so it is time to set up the root sequence.
+
+<<echo=TRUE>>=
+aa.seq <- AminoAcidSequence(length = 60)
+@
+
+Now we will create a pattern of processes. The ``left linker'', ``core'' and ``right linker'' regions evolve 
+by different sets of processes. The core region has no indel processes attached, so its length will 
+remain constant:
+
+<<echo=TRUE>>=
+process.pattern <- c(rep(list(list(wag, cont.del, cont.ins.wag)), 
+    times = 20), rep(list(list(jtt)), times = 20), rep(list(list(lg, 
+    cont.del, cont.ins.lg)), times = 20))
+@
+
+Apply the process pattern to the root sequence:
+<<echo=TRUE>>=
+aa.seq$processes <- process.pattern
+@
+
+Set up site specific rates by iterating over sites and sampling rates from 
+a substitution process specific distribution:
+<<echo=TRUE>>=
+for (i in 1:aa.seq$length) {
+    if (isAttached(aa.seq$sites[[i]], jtt)) {
+        setRateMultipliers(aa.seq, jtt, qnorm(runif(1,min=0.5,max=1),mean=0.001,sd=0.01), index = i)
+    }
+    else if (isAttached(aa.seq$sites[[i]], wag)) {
+        plusInvGamma(aa.seq, process = wag, pinv = 0.1, shape = 1, 
+            index = i)
+    }
+    else if (isAttached(aa.seq$sites[[i]], lg)) {
+        plusInvGamma(aa.seq, process = lg, pinv = 0.1, shape = 1, 
+            index = i)
+    }
+}
+@
+
+Sample the states of the root sequence from the attached substitution processes:
+<<echo=TRUE>>=
+sampleStates(aa.seq)
+print(aa.seq)
+@
+
+Plot the total rates of the sites:
+<<echo=TRUE,fig=TRUE>>=
+plot(aa.seq)
+@
+
+Read in a tree using the \code{ape} package:
+<<echo=TRUE>>=
+tree <- read.tree(file = "smalldemotree.nwk")
+@
+
+Construct the simulation object and get an object summary:
+<<echo=TRUE>>=
+sim <- PhyloSim(phylo = tree, root.seq = aa.seq)
+summary(sim)
+@
+
+Plot the simulation object (tree with node labels):
+<<echo=TRUE,fig=TRUE>>=
+plot(sim)
+@
+
+A ``node hook'' is a function which accepts a \code{Sequence} object
+through the named argument ``seq'' and returns a \code{Sequence} object.
+After simulating the branch leading to the node, the resulting
+\code{Sequence} object is passed to the node hook and the returned object
+is used to simulate the downstream branches.
+
+Create a node hook function:
+<<echo=TRUE>>=
+node.hook <- function(seq) {
+    for (site in seq$sites) {
+        if (isAttached(site, jtt)) {
+            attachProcess(site, pam)
+        }
+    }
+    return(seq)
+}
+@
+
+Attach the hook to node 8:
+<<echo=TRUE>>=
+attachHookToNode(sim, node = 8, fun = node.hook)
+@
+
+This \code{node.hook} function will attach the \code{pam} substitution process to all
+sites which have the \code{jtt} process attached (the ``core'' region). The affected sites 
+will evolve with a doubled rate by a combination of substitution processes (\code{jtt} and \code{pam}) in the clade defined by the node - \code{(t4, t2)}.
+
+Run the simulation:
+<<echo=TRUE>>=
+Simulate(sim)
+@
+
+Save the resulting alignment, omitting the internal nodes:
+<<echo=TRUE>>=
+saveAlignment(sim, file = "example_V3.1_aln.fas", skip.internal = TRUE)
+@
+Plot the resulting alignment alongside the tree (including sequences at internal nodes):
+<<echo=TRUE,fig=TRUE,width=180, height=80>>=
+plot(sim,num.pages=1)
+@
+<<echo=FALSE,results=hide>>=
+file.remove("example_V3.1_aln.fas")
+@
+
+Disable fast mode:
+<<echo=TRUE>>=
+rm(PSIM_FAST)
+@
+
+\subsection{Evolving codon sequences}
+
+Enable ``fast \& careless'' mode:
+<<echo=TRUE>>=
+PSIM_FAST <- TRUE
+@
+Construct a GY94 codon substitution model:
+<<echo=TRUE>>=
+p <- GY94()
+@
+Set the transition/transversion rate ratio:
+<<echo=TRUE>>=
+p$kappa = 2
+@
+Sample codon frequencies from a normal distribution:
+<<echo=TRUE>>=
+codon.freqs <- abs(rnorm(61, mean = 10, sd = 3))
+codon.freqs <- codon.freqs/sum(codon.freqs)
+p$equDist <- codon.freqs
+@
+Get object summary for p:
+<<echo=TRUE>>=
+summary(p)
+@
+
+Get a bubble plot of \code{p}:
+<<echo=TRUE,fig=TRUE>>=
+plot(p,scale=0.5)
+@
+
+Construct a discrete deletor process:
+<<echo=TRUE>>=
+d<-DiscreteDeletor(
+        rate=1,
+        sizes=1:4,
+        probs=c(4,3,2,1)/10
+);
+@
+
+Construct a discrete insertor process inserting neutrally evolving sites:
+<<echo=TRUE>>=
+i<-DiscreteInsertor(
+        rate=1.5,
+        sizes=1:4,
+        probs=c(4,3,2,1)/10,
+        template.seq=CodonSequence(length=4,processes=list(list(p)))
+);
+@
+
+Construct root sequence and attach process \code{p}:
+<<echo=TRUE>>=
+s<-CodonSequence(length=30,processes=list(list(p)))
+@
+
+Sample omegas from a discrete model:
+<<echo=TRUE>>=
+omegaVarM3(s,p,omegas=c(0,0.5,1),probs=c(2/4,1/4,1/4))
+@
+
+Plot the omega values across sites:
+<<echo=TRUE,fig=TRUE>>=
+plotParametersAtSites(s,p,"omega");
+@
+
+Sample states:
+<<echo=TRUE>>=
+sampleStates(s)
+@
+Construct the simulation object:
+<<echo=TRUE>>=
+sim <- PhyloSim(root.seq = s, phylo = read.tree("smalldemotree.nwk"))
+@
+
+Create a node hook function and attach to node 8:
+<<echo=TRUE>>=
+node.hook <- function(seq) {
+	setOmegas(seq, p, 1)
+	attachProcess(seq, d)
+	attachProcess(seq, i)
+	return(seq)
+}
+attachHookToNode(sim, node = 8, fun = node.hook)
+@
+
+The \code{node.hook} function sets all omegas to 1 and attaches the insertion process \code{i} and deletion process \code{d}. 
+Hence the sequences will evolve neutrally with indels in the clade defined by node 8 - \code{(t4, t2)}.
+
+Disable fast mode just before simulation in order to preserve branch statistics:
+<<echo=TRUE>>=
+rm(PSIM_FAST)
+@
+
+Run the simulation:
+<<echo=TRUE>>=
+Simulate(sim)
+@
+
+Plot the resulting alignment alongside the tree:
+<<echo=TRUE,fig=TRUE,width=180, height=80>>=
+plot(sim,num.pages=1)
+@
+
+Export the nonsynonymous substitution counts as a phylo object:
+<<echo=TRUE>>=
+nsyn.subst<-exportStatTree(sim,"nr.nsyn.subst")
+@
+
+Plot the exported phylo object:
+<<echo=TRUE,fig=TRUE>>=
+plot(nsyn.subst)
+nodelabels()
+@
+
+Save the resulting alignment:
+<<echo=TRUE>>=
+saveAlignment(sim, file = "example_V3.2_aln.fas", )
+@
+<<echo=FALSE,results=hide>>=
+file.remove("example_V3.2_aln.fas")
+@
+
+\subsection{Implementing a new process}
+
+The following code demonstrates how to implement a process which performs inverted duplications. In this example
+we simply replace the function object stored in the \code{generateBy} virtual field of a \code{GeneralInsertor}
+object. Alternatively, we could have defined a new class and set the insert generating function in the constructor method.
+
+Enable fast \& careless mode:
+<<echo=TRUE>>=
+PSIM_FAST<-TRUE;
+@
+
+Construct a DiscreteInsertor process:
+<<echo=TRUE>>=
+ivd<-DiscreteInsertor(rate=0.06,sizes=c(4,6),probs=c(2/3,1/3));
+@
+
+Set template sequence just to make the process object happy:
+<<echo=TRUE>>=
+ivd$templateSeq<-NucleotideSequence(length=1);
+@
+
+Replace the function object stored in the 
+\code{generateBy} virtual field. See the documentation of the 
+\code{GeneralInsertor} class:
+<<echo=TRUE>>=
+ivd$generateBy<-function(process=NA,length=NA,target.seq=NA,event.pos=NA,insert.pos=NA){
+	# get the target sequence length
+	target.length<-target.seq$length;
+	# construct a vector with the positions to copy:
+	positions<-(insert.pos+1):(insert.pos + length)
+	# discard illegal positions:
+	positions<-positions[ positions > 0 & positions <= target.length];
+	# copy subsequence
+	insert<-copySubSequence(target.seq,positions,process);
+	# reverse complement sequence,
+	# take care, the class of this objects is "Sequence":
+	revComp.NucleotideSequence(insert);
+	# do not allow nested insertions:
+	setRateMultipliers(insert,ivd,0);
+	# return insert	
+	return(insert);
+}
+@
+Now we have a process which performs inverted duplications.
+
+Construct a JC69 process object:
+<<echo=TRUE>>=
+p<-JC69();
+@
+
+Construct root sequence object:
+<<echo=TRUE>>=
+s<-NucleotideSequence(length=50)
+@
+Attach processes via virtual field:
+<<echo=TRUE>>=
+s$processes<-list(list(p,ivd))
+@
+
+Sample states from the equilibrium
+distribution of the attached processes:
+<<echo=TRUE>>=
+sampleStates(s)
+@
+Detach the substitution process:
+<<echo=TRUE>>=
+detachProcess(s,p)
+@
+Create among-sites rate variation for the inverted duplication
+process by sampling rate multipliers from an I+G model:
+<<echo=TRUE>>=
+plusInvGamma(s,ivd,pinv=0.7,shape=0.5)
+@
+Construct simulation object:
+<<echo=TRUE>>=
+sim<-PhyloSim(root.seq=s, phylo=read.tree("smalldemotree.nwk"));
+@
+<<echo=FALSE,results=hide>>=
+file.remove("smalldemotree.nwk");
+@
+Run simulation:
+<<echo=TRUE>>=
+Simulate(sim)
+@
+Plot tree and alignment:
+<<echo=TRUE,fig=TRUE,width=180, height=80>>=
+plot(sim,num.pages=1)
+@
+
+Save alignment:
+<<echo=TRUE>>=
+saveAlignment(sim,file="example_V3.3.fas");
+@
+<<echo=FALSE,results=hide>>=
+file.remove("example_V3.3.fas");
+@
+Disable fast \& careless mode:
+<<echo=TRUE>>=
+rm(PSIM_FAST);
+@
+
+
+\subsection{Evolving a genomic region containing a ``gene''}
+
+The following code demonstrates how to simulate a genomic region
+containing a gene with introns and noncoding regions.
+
+We will simulate the following features:
+
+\begin{itemize}
+	\item NC1 (length: 1000 nucleotide sites) - noncoding region 1, evolving under a GTR substitution model with deletions and insertions (of \code{C}s only).
+
+	\item E1 (length: 400 codon sites) - exon 1, evolving under a nucleotide-scaled GY94 codon model with small indels.
+
+	\item I1-5 (length: 200 nucleotide sites) - introns 1-5, evoling under a F84 substitution model with indels
+
+	\item E2-5 (length: 200 codon sites) - exons 2-5, evolving under a nucleotide-scaled GY94 codon model.
+
+	\item E6 (length: 400 codon sites)   - exon 6, evolving under a nucleotide-scaled GY94 codon model with small indels.
+
+	\item NC2 (length: 1400 nucleotide sites) - noncoding region 2, evolving under a K80 substitution model.
+	
+	\item Invariable start codon and splice sites.
+
+	\item A special substitution process for stop codons.
+\end{itemize}
+	
+The total length of the Sequence object is 5000. 
+We will also simulate heterogeneity of nucleotide substitution rates, indel rates
+and omega ratios.
+
+Enable fast \& careless mode:
+<<echo=TRUE>>=
+PSIM_FAST<-TRUE;
+@
+
+Create a list holding partition information 
+and set partition properties:
+
+<<echo=TRUE>>=
+part<-list();
+@
+
+Partition NC1:
+<<echo=TRUE>>=
+part$nc1<-list(
+		"type"="noncoding",
+		"len"=1000,
+		"subst"=NA,
+		"ins"=NA,
+		"del"=NA,
+		"gamma.shape"=0.5
+	);
+
+part$nc1$subst<-GTR(
+        rate.params=list(
+                "a"=1, "b"=2, "c"=3,
+                "d"=1, "e"=2, "f"=3
+        ),
+        base.freqs=c(1.5,1,1.5,1)/5
+)
+
+part$nc1$ins<-DiscreteInsertor(
+	rate=0.025,sizes=1:6,
+	probs=6:1/21,
+	template.seq=NucleotideSequence(string="CCCCCC")
+);
+
+part$nc1$del<-DiscreteDeletor(
+        rate=0.025,
+        sizes=1:6,
+        probs=6:1/21
+);
+@
+
+Partition E1:
+
+<<echo=TRUE>>=
+part$e1<-list(
+		"type"="first.exon",
+		"len"=400,
+		"subst"=NA,
+		"ins"=NA,
+		"del"=NA,
+		"omegas"=c(0,1,1.1),
+		"omega.probs"=c(4,2,1)/5
+	);
+@
+
+Construct a ``nucleotide-scaled'' codon model which can be used in mixed sequences:
+<<echo=TRUE>>=
+part$e1$subst<-GY94(kappa=2,scale.nuc=TRUE);
+
+part$e1$ins<-DiscreteInsertor(
+        rate=0.025,
+        sizes=1:2,
+        probs=c(2/3,1/3),
+        template.seq=CodonSequence(length=2,processes=list(list(part$e1$subst)))
+);
+
+
+part$e1$del<-DiscreteDeletor(
+        rate=0.025,
+        sizes=1:2,
+        probs=c(2/3,1/3)
+);
+
+
+f84<-F84();
+f84$kappa<-1.8;
+
+gy94.e2_5<-clone(part$e1$subst);
+gy94.e2_5$kappa<-1.5
+@
+
+Partitions E2-5 and I1-4:
+<<echo=TRUE>>=
+del.introns<-DiscreteDeletor(
+        rate=0.025,
+	sizes=1:8,
+        probs=8:1/36
+);
+
+ins.introns<-DiscreteInsertor(
+        rate=0.025,
+        sizes=1:8,
+        probs=8:1/36,
+        template.seq=NucleotideSequence(length=8,processes=list(list(f84)))
+);
+
+for(i in 1:4){
+	part[[paste("i",i,sep="")]]<-list(
+		"type"="intron",
+		"len"=200,
+		"subst"=f84,
+		"ins"=ins.introns,
+		"del"=del.introns,
+		"gamma.shape"=abs(rnorm(1,mean=1,sd=0.2))
+	)
+	part[[paste("e",i+1,sep="")]]<-list(
+		"type"="exon",
+		"len"=200,
+		"subst"=gy94.e2_5,
+		"ins"=NA,
+		"del"=NA,
+		"omegas"=c(0,0.5),
+		"omega.probs"=c(3/4,1/4)
+	)
+
+}
+@
+
+Partition I5:
+<<echo=TRUE>>=
+part$i5<-list(
+		"type"="intron",
+                "len"=200,
+                "subst"=f84,
+                "ins"=ins.introns,
+                "del"=del.introns,
+                "gamma.shape"=abs(rnorm(1,mean=1,sd=0.1))
+)
+rm(f84,gy94.e2_5,del.introns,ins.introns);
+@
+
+Partition E6:
+<<echo=TRUE>>=
+part$e6<-list(
+		"type"="last.exon",
+		"len"=400,
+		"subst"=NA,
+		"ins"=NA,
+		"del"=NA,
+		"omegas"=c(0,1,1.1),
+		"omega.probs"=c(4,2,1)/5
+);
+
+tmp<-clone(part$e1$subst);
+tmp$kappa<-0.5;
+part$e6$subst<-tmp;
+
+part$e6$del<-DiscreteDeletor(
+        rate=0.025,
+        sizes=1:4,
+        probs=c(4,3,2,1)/10
+);
+
+part$e6$ins<-DiscreteInsertor(
+        rate=0.025,
+        sizes=1:2,
+        probs=c(1/3,2/3),
+        template.seq=CodonSequence(length=2,processes=list(list(part$e6$subst)))
+);
+@
+
+Partition NC2:
+<<echo=TRUE>>=
+part$nc2<-list(
+		"type"="noncoding",
+		"len"=1400,
+		"subst"=K80(rate.params=list(Alpha = 2, Beta = 1)),
+		"ins"=NA,
+		"del"=NA,
+		"gamma.shape"=0.5
+	);
+@
+
+
+Construct root sequence object:
+<<echo=TRUE>>=
+s<-Sequence(length=5000);
+@
+
+Construct Alphabet objects:
+<<echo=TRUE>>=
+nuc<-NucleotideAlphabet();
+cod<-CodonAlphabet();
+@
+
+Construct an Alphabet object containing the stop codons:
+<<echo=TRUE>>=
+stop.alphabet<-Alphabet(symbols=c("TAG","TAA","TGA"));
+@
+
+Construct a substitution process acting on stop codons only:
+<<echo=TRUE>>=
+stop.subst<-GeneralSubstitution(
+		alphabet=stop.alphabet,
+		rate.list=list(
+				"TAG->TAA"=1,
+				"TAG->TGA"=2,
+				"TAA->TAG"=3,
+				"TAA->TGA"=1,
+				"TGA->TAG"=2,
+				"TGA->TAA"=3
+			)
+		);
+@
+
+Get a bubble plot of \code{stop.subst}:
+<<echo=TRUE,fig=TRUE>>=
+plot(stop.subst,scale=0.5);
+@
+
+Iterate over partitions, set up processes and rate multipliers, fix start codon and splice sites,
+attach the \code{stop.subst} process to stop codon:
+
+<<echo=TRUE>>=
+pos<-0;
+for(i in part){
+	beg<-pos+1;	
+	end<-pos+i$len;	
+	range<-beg:end;
+
+
+	if( (i$type=="noncoding") | (i$type=="intron") ){
+		setAlphabets(s,list(nuc),range);
+	}
+	else {
+		setAlphabets(s,list(cod),range);
+	}
+	
+	if(!is.na(i$del)){
+		attachProcess(s,i$del,range);
+	}
+	if(!is.na(i$ins)){
+		attachProcess(s,i$ins,range);
+	}
+
+	if( (i$type=="noncoding") | (i$type=="intron")){
+		attachProcess(s,i$subst,range);
+
+		plusInvGamma(this=s,process=i$subst,pinv=0.6,shape=i$gamma.shape,range);
+		if(i$type=="intron"){
+			# fix splicing sites
+			setStates(s,c("G","T","A","G"),c(beg,beg+1,end-1,end));
+			setRateMultipliers(s,i$subst,0,c(beg,beg+1,end-1,end));
+			setInsertionTolerance(s,i$ins,0,c(beg,beg+1,end-1,end));
+			setDeletionTolerance(s,i$del,0,c(beg,beg+1,end-1,end));
+		}
+	} 
+	else if(i$type=="exon"){
+		attachProcess(s,i$subst,range);
+
+		omegaVarM3.CodonSequence(s,i$subst,i$omegas,i$omega.probs,range);
+	}
+	if(i$type=="first.exon"){
+		attachProcess(s,i$subst,range);
+		# Fix start codon:
+		setStates(s,"ATG",beg);
+		setRateMultipliers(s,i$subst,0,beg)
+		setInsertionTolerance(s,i$ins,0,beg);
+		setDeletionTolerance(s,i$del,0,beg);
+	}
+	if(i$type=="last.exon"){
+		attachProcess(s,i$subst,range);
+		# Detach GY94 from last site:
+		detachProcess(s,i$subst,end);
+		# Replace alphabet:
+		setAlphabets(s,list(stop.alphabet),end);
+		# Attach stop codon process:
+		attachProcess(s,stop.subst,end);
+		# Sample stop codon:
+		sampleStates(s,end);
+		# Protect against indels:
+		setInsertionTolerance(s,i$ins,0,end);
+		setDeletionTolerance(s,i$del,0,end);
+	}
+	
+	pos<-end;
+}
+@
+
+Sample remaining site states:
+
+<<echo=TRUE>>=
+sampleStates(s);
+@
+
+Generate a random coalescent tree with 3 leaves and construct simulation object:
+<<echo=TRUE>>=
+sim<-PhyloSim(root.seq=s, phylo=rcoal(3));
+@
+
+Scale tree length to 0.15:
+<<echo=TRUE>>=
+scaleTree(sim,0.15/sim$treeLength);
+@
+
+Run simulation:
+<<echo=TRUE>>=
+Simulate(sim)
+@
+
+Plot tree and alignment, omitting ancestral sequences:
+<<echo=TRUE,fig=TRUE,width=180, height=100>>=
+plot(sim,num.pages="auto",plot.ancestors=FALSE)
+@
+
+Save alignment:
+<<echo=TRUE>>=
+saveAlignment(sim,file="example_V3.4.fas");
+@
+<<echo=FALSE,results=hide>>=
+file.remove("example_V3.4.fas");
+@
+
+Disable fast \& careless mode:
+<<echo=TRUE>>=
+rm(PSIM_FAST)
+@
+
+
+\section{Details of the fast field deletion model}
+
+A natural way to incorporate deletions into the Gillespie framework is to assign an individual rate to every possible deletion event. 
+Modelling in this manner is extremely general but requires a lot of specification: not only individual sites' tolerance to deletion but also of how they interact with neighbouring sites. 
+Instead we propose a more restricted ``field model'' of deletion that generalises previous work to allow the rate at which deletions occur to vary across the sequence but only requires one parameter per site -- its deletion tolerance -- to be specified.
+ Under this model, deletions are proposed in same manner as other events, specifying a rate of occurrence and a distribution of lengths and then assuming that the location and orientation of the deletion is chosen uniformly, but proposed deletions may then be rejected based on sites they propose to remove.
+ 
+Firstly consider only single-site deletions and let each site, $i$, in the sequence have an associated deletion tolerance parameter, $d_i \in [0,1]$, representing the probability that it is actually deleted given that a deletion is proposed. 
+A proposal / acceptance step is equivalent to just proposing at a slower rate, so this is just a special case of the most general model but one that can be implemented efficiently as a single Gillespie event (a deletion occurred somewhere) rather than a large number of slower events (treating every possible deletion separately). 
+Sites where $d_i=1$ are deleted at the background rate, sites with $d_i < 1$ are deleted more slowly, and sites with $d_i=0$ are never deleted. 
+For proposed deletions that span multiple sites, ${\cal I}$, each site is considered independently and the proposed deletion is accepted if and only if every site accepts it: the total probability of acceptance is therefore $\prod_{i\in {\cal I}} d_i$. 
+
+It is natural to think of the background rate of deletion as a neutral rate but this is not necessary and can lead to the Gillespie algorithm becoming inefficient: for example, an extremely deletion intolerant sequence will reject almost all deletions proposed and so waste many steps.
+ Instead we can rescale the process (``fast field deletion model'') so that deletions are proposed at a rate equal to what would occur if the entire sequence had a deletion tolerance equal to its most tolerant site (deletion tolerance $d$) and then accept a deletion spanning sites ${\cal I}$ with probability $d_i / d$. 
+Table~\ref{distributions} gives the rate scaling factor and distribution of deletion lengths after scaling for a variety of distributions that could be used to model deletion length. 
+In most cases, the rescaled distribution of deletion lengths is a member of the same family as the ``neutral'' process.
+
+\begin{table}[h]
+\begin{tabular}{llll} 
+Distribution & Density & Scale factor & Rescaled distribution \\ \hline
+Geometric, ${\rm Geom}(\lambda)$
+	& $\lambda^{k-1}(1-\lambda)$ 
+	& ${ d \frac{1-\lambda}{1 - d\lambda}}$ 
+	& ${\rm Geom}(d\lambda)$ \\
+	&&&\\
+Poisson + 1, ${\rm Po_{+1}}(\lambda)$	
+	& ${ \frac{e^{-\lambda}\lambda^{k-1}}{\Gamma(k)}  }$ 
+	& $d { e^{-\lambda (1-d)} }$ 
+	& ${\rm Po_{+1}}(d\lambda)$ \\
+	&&&\\
+Conway-Maxwell Poisson + 1, ${\rm CMP_{+1}}(\lambda,\nu)$ 
+	& ${ \frac{\lambda^{k-1}}{\Gamma(k)^\nu {\cal Z}(\lambda,\nu)} }$ 
+	& ${d \frac{ {\cal Z}(\lambda,\nu)}{ {\cal Z}(d\lambda,\nu)}}$ 
+	&  ${\rm CMP_{+1}}(d\lambda,\nu)$ \\
+	&&&\\
+Negative Binomial + 1, ${\rm NB_{+1}}(\lambda,r)$ 
+	& ${  \frac{\Gamma(r+k-1)}{\Gamma(k)\Gamma(r)} (1-\lambda)^r \lambda^{k-1} } $
+	& ${ d\frac{(1-\lambda)^r}{(1-d\lambda)^r} }$ 
+	& ${\rm NB_{+1}}(d\lambda,r)$ \\\hline
+\end{tabular}
+\caption{The rate scaling factor and distribution of deletion lengths after scaling for a variety of distributions that could be used to model deletion length.}
+\label{distributions}
+\end{table}
+
+\end{document}
+
+
+
+

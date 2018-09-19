@@ -1,0 +1,57 @@
+exportPattern("^[[:alpha:]]+")
+
+importFrom(methods, show)
+importFrom(stats4, plot, summary)
+importFrom(stats, screeplot, biplot, predict)
+importFrom(rrcov, getCenter, getEigenvalues, getLoadings, getQuan, getScores, getSdev)
+
+## export functions including S4 generics
+export( compute_cov_cor,
+	computeScores,
+	detail,
+	FaClassic,
+	FaCov,
+	factorScorePca,
+	factorScorePfa,
+	fsOrder,        
+	getFa,                        
+	myFaPrint,      
+	myplotDD,        
+	plot,     
+	predict,        
+	print,     
+        show,          
+	summary
+)
+
+## S3 generics
+S3method(FaClassic, default)
+S3method(FaClassic, formula)
+
+S3method(FaCov, default)
+S3method(FaCov, formula)
+
+exportMethods(
+    getCenter,
+    getEigenvalues,
+    getFa,
+    getLoadings,
+    getQuan,
+    getScores,
+    getSdev,
+    plot,
+    predict,
+    print,
+    show,
+    summary 
+)
+
+exportClasses(
+     Fa,
+     FaClassic,
+     FaCov,
+     FaRobust,
+     SummaryFa,
+     Ulogical,
+     Unumeric
+)
