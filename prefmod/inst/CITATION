@@ -1,0 +1,20 @@
+citHeader("To cite prefmod in publications use:")
+
+citEntry(entry = "Article",
+  title        = "{prefmod}: An {R} Package for Modeling Preferences Based on Paired Comparisons, Rankings, or Ratings",
+  author       = personList(as.person("Reinhold Hatzinger"),
+                   as.person("Regina Dittrich")),
+  journal      = "Journal of Statistical Software",
+  year         = "2012",
+  volume       = "48",
+  number       = "10",
+  pages        = "1--31",
+  url          = "http://www.jstatsoft.org/v48/i10/",
+
+  textVersion  =
+  paste("Reinhold Hatzinger, Regina Dittrich (2012).",
+        "prefmod: An R Package for Modeling Preferences Based on Paired Comparisons, Rankings, or Ratings.",
+        "Journal of Statistical Software, 48(10), 1-31.",
+        "URL http://www.jstatsoft.org/v48/i10/.")
+)
+
