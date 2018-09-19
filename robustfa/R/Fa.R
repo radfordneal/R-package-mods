@@ -98,8 +98,8 @@ setMethod("predict", "Fa", function(object, newdata){
     else { 
     F = switch(res$scoresMethod, 
              none = stop("no scores: try scoresMethod = 'regression' or 'Bartlett'"),
-             regression = newdata %*% solve(res$usedMatrix) %*% res$loadings[],
-             Bartlett = newdata %*% diag(1/res$uniquenesses) %*% res$loadings[] %*% solve(t(res$loadings[]) %*% diag(1/res$uniquenesses) %*% res$loadings[])
+             regression = newdata %*% solve(res$usedMatrix) %*% unclass(res$loadings),
+             Bartlett = newdata %*% diag(1/res$uniquenesses) %*% unclass(res$loadings) %*% solve(t(unclass(res$loadings)) %*% diag(1/res$uniquenesses) %*% unclass(res$loadings))
             ) 
     }
     

@@ -124,7 +124,7 @@ FaClassic.default <- function(x, factors = 2, cor = FALSE, method = c("mle", "pc
     ## cl is a call, its name is changed from "FaClassic.default" to "FaClassic"
     res <- new("FaClassic", call = cl,
 			converged = out$converged,
-			loadings = out$loadings[], # class(out$loadings) == "loadings", class(out$loadings[]) == "matrix"
+			loadings = unclass(out$loadings), # class(out$loadings) == "loadings", class(unclass(out$loadings)) == "matrix"
 			communality = out$communality,
 			uniquenesses = out$uniquenesses,
 			cor = cor,

@@ -42,7 +42,7 @@ computeScores = function(out, x = data, covmat = covmat, cor = cor, scoresMethod
     }
     else if (scoresMethod == "regression"){
 		# compute the scoring coefficient
-		scoringCoef  = t(out$loadings[]) %*% solve(S)
+		scoringCoef  = t(unclass(out$loadings)) %*% solve(S)
 		# compute scores
 		F = scaledX %*% t(scoringCoef)
 		# F = scale(x, center = center, scale = FALSE) %*% t(scoringCoef) # only do the centered transformation, to be compatible with the covariance matrix S.
@@ -55,8 +55,8 @@ computeScores = function(out, x = data, covmat = covmat, cor = cor, scoresMethod
 	}
 	else{ ## (scoresMethod == "Bartlett")
 		# compute the scoring coefficient
-		ADA.inv  = solve(t(out$loadings[]) %*% diag(1/out$uniquenesses) %*% out$loadings[])
-		scoringCoef  = ADA.inv %*% t(out$loadings[]) %*% diag(1/out$uniquenesses)
+		ADA.inv  = solve(t(unclass(out$loadings)) %*% diag(1/out$uniquenesses) %*% unclass(out$loadings))
+		scoringCoef  = ADA.inv %*% t(unclass(out$loadings)) %*% diag(1/out$uniquenesses)
 		# compute scores
 		F = scaledX %*% t(scoringCoef)
 		# F = scale(x, center = center, scale = FALSE) %*% t(scoringCoef) # only do the centered transformation, to be compatible with the covariance matrix S.

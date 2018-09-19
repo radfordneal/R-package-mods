@@ -117,7 +117,7 @@ FaCov.default <- function(x, factors = 2, cor = FALSE, cov.control = CovControlM
     cl[[1]] <- as.name("FaCov")
     res <- new("FaCov", call = cl,
 			converged = out$converged,
-			loadings = out$loadings[], # class(out$loadings) == "loadings", class(out$loadings[]) == "matrix"
+			loadings = unclass(out$loadings), # class(out$loadings) == "loadings", class(unclass(out$loadings)) == "matrix"
 			communality = out$communality,
 			uniquenesses = out$uniquenesses,
 			cor = cor,
