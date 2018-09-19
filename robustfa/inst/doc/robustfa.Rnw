@@ -1,0 +1,2680 @@
+% -*- TeX -*- -*- Soft -*-
+\documentclass[article,shortnames,nojss]{jss}
+%\VignetteIndexEntry{An Object-Oriented Solution for Robust Factor Analysis}
+%\VignetteDepends{robustfa,rrcov,lattice,grid}
+%\VignetteKeywords{robustness, factor analysis, object-oriented solution, R, statistical design patterns}
+%\VignettePackage{robustfa}
+\usepackage{amscd}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\renewcommand{\theequation}{\thesection.\arabic{equation}}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[section]
+\newtheorem{definition}{Definition}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{remark}{Remark}[section]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% declarations for jss.cls %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% almost as usual
+\author{Ying-Ying Zhang\\Chongqing University}
+\title{An Object-Oriented Solution for \\
+Robust Factor Analysis
+\thanks{The research was supported by Natural Science Foundation Project of CQ
+CSTC CSTC2011BB0058.}}
+
+
+%% for pretty printing and a nice hypersummary also set:
+\Plainauthor{Ying-Ying Zhang} %% comma-separated
+\Plaintitle{An Object-Oriented Solution for Robust Factor Analysis} %% without formatting
+\Shorttitle{An OOS for Robust Factor Analysis} %% a short title (if necessary)
+
+%% an abstract and keywords
+\Abstract{ Taking advantage of the \proglang{S4} class system of the programming
+environment \proglang{R}, which facilitates the creation and maintenance of reusable and
+modular components, an object-oriented solution for robust factor analysis is
+developed. The solution resides in the package \pkg{robustfa}. In the
+solution, new \proglang{S4} classes \code{"Fa"}, \code{"FaClassic"}, \code{"FaRobust"},
+\code{"FaCov"}, \code{"SummaryFa"} are created. The robust factor analysis
+function \code{FaCov()} can deal with maximum likelihood estimation, principal
+component analysis, and principal factor analysis methods. Consider the factor
+analysis methods (classical or robust), the data input (data or the scaled
+data), and the running matrix (covariance or correlation) all together, there
+are 8 combinations. We recommend classical and robust factor analysis using
+the correlation matrix of the scaled data as the running matrix for
+theoretical and computational reasons. The design of the solution follows
+common statistical design patterns. The application of the solution to
+multivariate data analysis is demonstrated on the \code{hbk} data and the
+\code{stock611} data which themselves are parts of the package
+\pkg{robustfa}.
+}
+\Keywords{robustness, factor analysis,
+object-oriented solution, \proglang{R}, statistical design patterns}
+\Plainkeywords{robustness, factor analysis,
+object-oriented solution, R, statistical design patterns} %% without formatting
+%% at least one keyword must be supplied
+
+%% publication information
+%% NOTE: Typically, this can be left commented and will be filled out by the technical editor
+%% \Volume{13}
+%% \Issue{9}
+%% \Month{September}
+%% \Year{2004}
+%% \Submitdate{2004-09-29}
+%% \Acceptdate{2004-09-29}
+
+%% The address of (at least) one author should be given
+%% in the following format:
+\Address{
+  Ying-Ying Zhang\\
+  Department of Statistics and Actuarial Science\\
+  College of Mathematics and Statistics\\
+  Chongqing University\\
+  Chongqing, China\\
+  E-mail: \email{robertzhangyying@qq.com}\\
+  URL: \url{http://baike.baidu.com/view/7694173.htm}
+}
+%% It is also possible to add a telephone and fax number
+%% before the e-mail in the following format:
+%% Telephone: +43/1/31336-5053
+%% Fax: +43/1/31336-734
+
+%% for those who use Sweave please include the following line (with % symbols):
+%% need no \usepackage{Sweave.sty}
+
+%% end of declarations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Sweave options for the complete document
+%% \SweaveOpts{prefix.string=robustfa}
+\SweaveOpts{prefix.string=robustfa}
+\begin{document}
+
+%% include your article here, just as usual
+%% Note that you should use the \pkg{}, \proglang{} and \code{} commands.
+%% Note: If there is markup in \(sub)section, then it has to be escape as above.
+
+\section{Introduction}
+
+Outliers exist in virtually every data set in any application domain. In order
+to avoid the masking effect, robust estimators are needed. The classical
+estimators of multivariate location and scatter are the sample mean
+$\mathbf{\bar{x}}$ and the sample covariance matrix $\mathbf{S}$. These
+estimates are optimal if the data come from a multivariate normal distribution
+but are extremely sensitive to the presence of even a few outliers. If
+outliers are present in the input data they will influence the estimates
+$\mathbf{\bar{x}}$\ and $\mathbf{S}$ and subsequently worsen the performance
+of the classical factor analysis \citep{Pison-etal:03}. Therefore it is
+important to consider robust alternatives to these estimators. There are
+several robust estimators in the literature: MCD \citep{Rousseeuw:85,
+Rousseeuw-VanDriessen:99}, OGK \citep{Maronna-Zamar:02}, MVE
+\citep{Rousseeuw:85}, M \citep{Rocke:96}, S \citep{Davies:87, Ruppert:92,
+Woodruff-Rocke:94, Rocke:96, He-Wang:97, SalibianBarrera-Yohai:06} and Stahel-Donoho
+\citep{Stahel:81a, Stahel:81b, Donoho:82, Maronna-Yohai:95}. Substituting the
+classical location and scatter estimates by their robust analogues is the most
+straightforward method for robustifying many multivariate procedures
+\citep{Maronna-Martin-Yohai:06, Todorov-Filzmoser:09}, which is our choice for
+robustifying the factor analysis procedure.
+
+Taking advantage of the new \proglang{S4} class system \citep{Chambers:98} of \proglang{R}
+\citep{RDevelopmentCoreTeam:11} which facilitate the creation of reusable and
+modular components, an object-oriented solution for robust factor analysis is
+implemented. The application of the solution to multivariate data analysis is
+demonstrated on the \code{hbk} data and the \code{stock611} data which
+themselves are parts of the package \pkg{robustfa} \citep{Zhang:13}. We
+follow the object-oriented paradigm as applied to the \proglang{R} object model (naming
+conventions, access methods, coexistence of \proglang{S3} and \proglang{S4} classes, usage of UML,
+etc.) which is described in \citep{Todorov-Filzmoser:09}.
+
+The rest of the paper is organized as follows. In the next Section 2 the
+design approach and structure of the solution are given. Section 3 describes
+the robust factor analysis method, some theoretical results, the computations,
+and the implementations. The Sections 3.1, 3.2, 3.3, and 3.4 are dedicated to
+the object model, method of robust factor analysis, a \code{hbk} data example,
+and a stocks data example, respectively. Section 4 concludes.
+
+\section{Design approach and structure of the solution}
+
+We follow the route of \citep{Todorov-Filzmoser:09}. The main part of the
+solution is implemented in the package \pkg{robustfa} but it relies on
+codes in the packages \pkg{rrcov} \citep{Todorov:13}, \pkg{robustbase}
+\citep{Rousseeuw-etal:13}, and \pkg{pcaPP} \citep{Filzmoser-Fritz-Kalcher:13}%
+. The structure of the solution and its relation to other \proglang{R} packages are shown
+in Figure~\ref{fig:structure}. The package \pkg{robustfa} extends
+\pkg{rrcov} with options for dealing with robust factor analysis problems
+like \pkg{robust} \citep{Wang-etal:13}.
+
+\begin{figure}[!htbp]
+\centerline{
+\includegraphics[width=3in]{Structure.pdf}}\caption{Class diagram: structure
+of the solution and relation to other R packages.}%
+\label{fig:structure}%
+\end{figure}
+
+\section{Robust factor analysis}
+
+\subsection{Object model}
+
+The object model for the \proglang{S4} classes and methods implementing the robust factor
+analysis follows the Unified Modeling Language (UML) \citep{OMG:09a, OMG:09b}
+class diagram and is presented in Figure~\ref{fig:FaModel}. A class is denoted
+by a box with three compartments which contain the name, the attributes
+(slots) and operations (methods) of the class, respectively. The class names,
+\code{Fa} and \code{FaRobust}, in italics indicate that the classes are
+abstract. Each attribute is followed by its type and each operation is
+followed by the type of its return value. We use the \proglang{R} types like
+\code{numeric}, \code{vector}, \code{matrix}, etc. but the type can be also a
+name of an \proglang{S4} class (\code{Fa}, \code{FaClassic}, or \code{FaCov}). The
+classes \code{Ulogical}, \code{Unumeric} etc. are class unions for optional
+slots, e.g., for definition of slots which will be computed on demand.
+Relationships between classes are denoted by arrows with different form. The
+inheritance relationship is depicted by a large empty triangular arrowhead
+pointing to the base class. We see that both \code{FaClassic} and
+\code{FaRobust} inherit from \code{Fa}, and \code{FaCov} inherits from
+\code{FaRobust}. Composition means that one class contains another one as a
+slot. This relation is represented by an arrow with a solid diamond on the
+side of the composed class. We see that \code{SummaryFa} is a composed class
+of \code{Fa}.
+
+As in \citep{Todorov-Filzmoser:09}, all UML diagrams of the solution were
+created with the open source UML tool \textbf{ArgoUML} \citep{Robbins:99,
+Robbins-Redmiles:00} which is available for download from
+http://argouml.tigris.org/. The naming conventions of the solution follow the
+recommended Sun's Java coding style. See http://java.sun.com/docs/codeconv/.
+
+\begin{figure}[!htbp]
+\centerline{
+\includegraphics[width=3in]{FaModel.pdf}}\caption{Object model for robust
+factor analysis.}%
+\label{fig:FaModel}%
+\end{figure}
+
+\subsection{Factor analysis based on a robust covariance matrix}
+
+As in \citep{Todorov-Filzmoser:09},\ the most straightforward and intuitive
+method to obtain robust factor analysis is to replace the classical estimates
+of location and covariance by their robust analogues. The package
+\pkg{stats} in base \proglang{R} contains the function \code{factanal()} which
+performs a factor analysis on a given numeric data matrix and returns the
+results as an object of \proglang{S3} class \code{factanal}. This function has an
+argument \code{covmat} which can take a covariance matrix, or a covariance
+list as returned by \code{cov.wt}, and if supplied, it is used rather than the
+covariance matrix of the input data. This allows to obtain robust factor
+analysis by supplying the covariance matrix computed by \code{cov.mve} or
+\code{cov.mcd} from the package \pkg{MASS}. The reason to include such type
+of function in the solution is the unification of the interfaces by leveraging
+the object orientation provided by the \proglang{S4} classes and methods. The function
+\code{FaCov()} computes robust factor analysis by replacing the classical
+covariance matrix with one of the robust covariance estimators available in
+the package \pkg{rrcov}---MCD, OGK, MVE, M, S or Stahel-Donoho, i.e., the
+parameter \code{cov.control} can be any object of a class derived from the
+base class \code{CovControl}. This control class will be used to compute a
+robust estimate of the covariance matrix. If this parameter is omitted, MCD
+will be used by default. Of course any newly developed estimator following the
+concepts of the framework in \citep{Todorov-Filzmoser:09} can be used as input
+to the function \code{FaCov()}.
+
+There are three methods to perform a factor analysis: maximum likelihood
+estimation (MLE), principal component analysis (PCA), and principal factor
+analysis (PFA). The function \code{factanal()} performs a factor analysis
+using MLE. The function \code{FaCov()} deals with three methods using an
+argument \code{`method = c("mle", "pca", "pfa")'}. When the data set is large,
+\code{factanal()} usually generates errors, and thus one can only resort to
+the PCA and PFA methods.
+
+When compare the classical and robust factor analysis methods, there are two
+other issues to consider. That is, whether we should use \code{data} or
+\code{scale(data)} as the data input; whether we should use the covariance
+matrix or the correlation matrix as the running matrix (used matrix)? Consider
+the factor analysis methods, the data input, and the running matrix all
+together, there are 8 combinations, i.e.,
+\begin{verbatim}
+(1) classical, x = data, cor = FALSE
+(2) classical, x = data, cor = TRUE
+(3) classical, x = scale(data), cor = FALSE
+(4) classical, x = scale(data), cor = TRUE
+(5) robust, x = data, cor = FALSE
+(6) robust, x = data, cor = TRUE
+(7) robust, x = scale(data), cor = FALSE
+(8) robust, x = scale(data), cor = TRUE
+\end{verbatim}
+
+\noindent Here \code{cor} is a logical value indicating whether the
+calculation should use the covariance matrix (\code{cor = FALSE}) or the
+correlation matrix (\code{cor = TRUE}).
+
+There are 4 classical and robust factor analysis comparisons, i.e., (1) vs
+(5), (2) vs (6), (3) vs (7), and (4) vs (8). We recommend (4) vs (8). The
+reasons are as follows. First, when the variables have different units, it is
+common to standardize the variables, the sample covariance matrix of the
+standardized variables is the correlation matrix of the original variables.
+Thus it is common to use the correlation matrix as the running matrix. Second,
+we need to explain the factors from the loading matrix. The entries of the
+loading matrix from the sample covariance matrix are not limitted between 0
+and 1, which makes the explanations of the factors hard. The first two reasons
+suggest us to choose (2) vs (6) and (4) vs (8). However, (2) and (4) ((6) and
+(8)) have the same running matrices, eigenvalues, loadings, uniquenesses,
+scoring coefficients, scaled data matrices, and score matrices, see Theorem
+\ref{Theorem: R, scaledX}. That is, (2) vs (6) and (4) vs (8) give us the same
+comparisons. We can choose any pair to do the comparison. Third, we may not be
+able to compute the robust covariance matrix, and thus the robust correlation
+matrix of the original data, as the stocks data example will illustrate.
+Consequently, we should choose (4) vs (8).
+
+The running matrices of the 8 combinations are given in Table
+\ref{Table:running matrix}. In the table,
+\[
+\text{correlation = cov2cor(covariance).}
+\]
+
+
+\begin{table}[!htbp]
+\caption{The running matrices.}%
+\label{Table:running matrix}
+\begin{center}
+{\small
+\begin{tabular}
+[c]{|l|l|l|l|}\hline
+&  & Classical & Robust\\\hline
+data & covariance & (1) $\boldsymbol{S}^{c}$ & (5) $\boldsymbol{S}^{r}%
+$\\\cline{2-4}
+& correlation & (2) $\boldsymbol{R}^{c}$ & (6) $\boldsymbol{R}^{r}$\\\hline
+scale(data) & covariance & (3) $\tilde{\boldsymbol{S}}^{c}$ & (7)
+$\tilde{\boldsymbol{S}}^{r}$\\\cline{2-4}
+& correlation & (4) $\tilde{\boldsymbol{R}}^{c}$ & (8) $\tilde{\boldsymbol{R}%
+}^{r}$\\\hline
+\end{tabular}
+}
+\end{center}
+\end{table}
+
+Let $\boldsymbol{S}=\left(  s_{ij}\right)  _{p\times p}$ be a square matrix.
+Let $\boldsymbol{v}=\mathrm{diag}\left(  \boldsymbol{S}\right)  =\left(
+s_{11},s_{22},\cdots,s_{pp}\right)  ^{\top}$ be a vector holding the diagonal
+elements of $\boldsymbol{S}$. Let
+\[
+\boldsymbol{D}=\mathrm{diag}\left(  \boldsymbol{v}\right)  =\mathrm{diag}%
+\left(  \mathrm{diag}\left(  \boldsymbol{S}\right)  \right)  =%
+\begin{pmatrix}
+s_{11} &  &  & \\
+& s_{22} &  & \\
+&  & \ddots & \\
+&  &  & s_{pp}%
+\end{pmatrix}
+\]
+be a diagonal matrix whose diagonal is the vector $\boldsymbol{v}$. In fact,
+\begin{align*}
+\mathrm{diag}\left(  \text{matrix}\right)   &  =\text{vector,}\\
+\mathrm{diag}\left(  \text{vector}\right)   &  =\text{diagonal matrix.}%
+\end{align*}
+
+
+Let
+\[
+\boldsymbol{X}_{n\times p}=%
+\begin{pmatrix}
+\boldsymbol{X}_{\left(  1\right)  }^{\top}\\
+\boldsymbol{X}_{\left(  2\right)  }^{\top}\\
+\vdots\\
+\boldsymbol{X}_{\left(  n\right)  }^{\top}%
+\end{pmatrix}
+\]
+be the original data matrix, where $\boldsymbol{X}_{\left(  k\right)
+}=\left(  x_{k1},x_{k2},\cdots,x_{kp}\right)  ^{\top}$ ($k=1,2,\cdots,n$) is
+the $k$th observation, $n$ is the number of observations. Let $M$ be the
+number of regular observations (excluding the outliers), without loss of
+generality, we can assume $\boldsymbol{X}_{\left(  1\right)  },\boldsymbol{X}%
+_{\left(  2\right)  },\cdots,\boldsymbol{X}_{\left(  M\right)  }$ as the
+regular observations. Let%
+\[
+\boldsymbol{\bar{X}}=\frac{1}{n}%
+%TCIMACRO{\dsum \limits_{k=1}^{n}}%
+%BeginExpansion
+{\displaystyle\sum\limits_{k=1}^{n}}
+%EndExpansion
+\boldsymbol{X}_{\left(  k\right)  }=\left(  \bar{x}_{1},\bar{x}_{2}%
+,\cdots,\bar{x}_{p}\right)  ^{\top}%
+\]
+be the sample mean of $\boldsymbol{X}$, where
+\[
+\bar{x}_{j}=\frac{1}{n}%
+%TCIMACRO{\dsum \limits_{k=1}^{n}}%
+%BeginExpansion
+{\displaystyle\sum\limits_{k=1}^{n}}
+%EndExpansion
+x_{kj},\;\;j=1,2,\cdots,p.
+\]
+Let
+\[
+\boldsymbol{S}=\left(  s_{ij}\right)  _{p\times p}=\frac{1}{n-1}%
+%TCIMACRO{\dsum \limits_{k=1}^{n}}%
+%BeginExpansion
+{\displaystyle\sum\limits_{k=1}^{n}}
+%EndExpansion
+\left(  \boldsymbol{X}_{\left(  k\right)  }-\boldsymbol{\bar{X}}\right)
+\left(  \boldsymbol{X}_{\left(  k\right)  }-\boldsymbol{\bar{X}}\right)
+^{\top}%
+\]
+be the sample covariance matrix, where%
+\[
+s_{ij}=\frac{1}{n-1}%
+%TCIMACRO{\dsum \limits_{k=1}^{n}}%
+%BeginExpansion
+{\displaystyle\sum\limits_{k=1}^{n}}
+%EndExpansion
+\left(  x_{ki}-\bar{x}_{i}\right)  \left(  x_{kj}-\bar{x}_{j}\right)
+,\;i,j=1,2,\cdots,p.
+\]
+Let $\boldsymbol{X}^{\ast}$ be the scaled matrix of $\boldsymbol{X}$, where%
+\begin{align*}
+\boldsymbol{X}^{\ast}  &  =%
+\begin{pmatrix}
+\boldsymbol{X}_{\left(  1\right)  }^{\ast\top}\\
+\boldsymbol{X}_{\left(  2\right)  }^{\ast\top}\\
+\vdots\\
+\boldsymbol{X}_{\left(  n\right)  }^{\ast\top}%
+\end{pmatrix}
+=%
+\begin{pmatrix}
+\left(  \boldsymbol{D}^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(  1\right)
+}-\boldsymbol{\bar{X}}\right)  \right)  ^{\top}\\
+\left(  \boldsymbol{D}^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(  2\right)
+}-\boldsymbol{\bar{X}}\right)  \right)  ^{\top}\\
+\vdots\\
+\left(  \boldsymbol{D}^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(  n\right)
+}-\boldsymbol{\bar{X}}\right)  \right)  ^{\top}%
+\end{pmatrix}
+\\
+&  =%
+\begin{pmatrix}
+\left(  \boldsymbol{X}_{\left(  1\right)  }-\boldsymbol{\bar{X}}\right)
+^{\top}\boldsymbol{D}^{-\frac{1}{2}}\\
+\left(  \boldsymbol{X}_{\left(  2\right)  }-\boldsymbol{\bar{X}}\right)
+^{\top}\boldsymbol{D}^{-\frac{1}{2}}\\
+\vdots\\
+\left(  \boldsymbol{X}_{\left(  n\right)  }-\boldsymbol{\bar{X}}\right)
+^{\top}\boldsymbol{D}^{-\frac{1}{2}}%
+\end{pmatrix}
+=%
+\begin{pmatrix}
+\boldsymbol{X}_{\left(  1\right)  }^{\top}-\boldsymbol{\bar{X}}^{\top}\\
+\boldsymbol{X}_{\left(  2\right)  }^{\top}-\boldsymbol{\bar{X}}^{\top}\\
+\vdots\\
+\boldsymbol{X}_{\left(  n\right)  }^{\top}-\boldsymbol{\bar{X}}^{\top}%
+\end{pmatrix}
+\boldsymbol{D}^{-\frac{1}{2}}\\
+&  =\left(  \boldsymbol{X}-\boldsymbol{1\bar{X}}^{\top}\right)  \boldsymbol{D}%
+^{-\frac{1}{2}},
+\end{align*}%
+\[
+\boldsymbol{1}=\boldsymbol{1}_{n\times1}=%
+\begin{pmatrix}
+1\\
+1\\
+\vdots\\
+1
+\end{pmatrix}
+_{n\times1},\;\boldsymbol{D}=\mathrm{diag}\left(  \mathrm{diag}\left(
+\boldsymbol{S}\right)  \right)  =%
+\begin{pmatrix}
+s_{11} &  &  & \\
+& s_{22} &  & \\
+&  & \ddots & \\
+&  &  & s_{pp}%
+\end{pmatrix}
+,
+\]%
+\[
+\boldsymbol{D}^{\frac{1}{2}}=\left[  \mathrm{diag}\left(  \mathrm{diag}\left(
+\boldsymbol{S}\right)  \right)  \right]  ^{\frac{1}{2}}=\mathrm{diag}\left(
+\left[  \mathrm{diag}\left(  \boldsymbol{S}\right)  \right]  ^{\frac{1}{2}%
+}\right)  =%
+\begin{pmatrix}
+\sqrt{s_{11}} &  &  & \\
+& \sqrt{s_{22}} &  & \\
+&  & \ddots & \\
+&  &  & \sqrt{s_{pp}}%
+\end{pmatrix}
+,
+\]%
+\[
+\boldsymbol{D}^{-\frac{1}{2}}=\left[  \mathrm{diag}\left(  \mathrm{diag}%
+\left(  \boldsymbol{S}\right)  \right)  \right]  ^{-\frac{1}{2}}%
+=\mathrm{diag}\left(  \left[  \mathrm{diag}\left(  \boldsymbol{S}\right)
+\right]  ^{-\frac{1}{2}}\right)  =%
+\begin{pmatrix}
+1/\sqrt{s_{11}} &  &  & \\
+& 1/\sqrt{s_{22}} &  & \\
+&  & \ddots & \\
+&  &  & 1/\sqrt{s_{pp}}%
+\end{pmatrix}
+,
+\]%
+\begin{align*}
+\boldsymbol{X}_{\left(  k\right)  }^{\ast}  &  =\boldsymbol{D}^{-\frac{1}{2}%
+}\left(  \boldsymbol{X}_{\left(  k\right)  }-\boldsymbol{\bar{X}}\right) \\
+&  =%
+\begin{pmatrix}
+1/\sqrt{s_{11}} &  &  & \\
+& 1/\sqrt{s_{22}} &  & \\
+&  & \ddots & \\
+&  &  & 1/\sqrt{s_{pp}}%
+\end{pmatrix}%
+\begin{pmatrix}
+x_{k1}-\bar{x}_{1}\\
+x_{k2}-\bar{x}_{2}\\
+\vdots\\
+x_{kp}-\bar{x}_{p}%
+\end{pmatrix}
+\\
+&  =%
+\begin{pmatrix}
+\left(  x_{k1}-\bar{x}_{1}\right)  /\sqrt{s_{11}}\\
+\left(  x_{k2}-\bar{x}_{2}\right)  /\sqrt{s_{22}}\\
+\vdots\\
+\left(  x_{kp}-\bar{x}_{p}\right)  /\sqrt{s_{pp}}%
+\end{pmatrix}
+.
+\end{align*}
+
+
+\begin{table}[!htbp]
+\caption{Results of (1), (2), (5), and (6).}%
+\label{Table:2-6}
+\begin{center}
+{\small \hspace*{-1.5cm}
+\begin{tabular}
+[c]{|c|c|c|}\hline
+& $\boldsymbol{X}$, classical (1), (2) & $\boldsymbol{X}$, robust (5),
+(6)\\\hline
+data matrix & $\boldsymbol{X}=%
+\begin{pmatrix}
+\boldsymbol{X}_{\left(  1\right)  }^{\top}\\
+\boldsymbol{X}_{\left(  2\right)  }^{\top}\\
+\vdots\\
+\boldsymbol{X}_{\left(  n\right)  }^{\top}%
+\end{pmatrix}
+$ & $\boldsymbol{X}=%
+\begin{pmatrix}
+\boldsymbol{X}_{\left(  1\right)  }^{\top}\\
+\boldsymbol{X}_{\left(  2\right)  }^{\top}\\
+\vdots\\
+\boldsymbol{X}_{\left(  n\right)  }^{\top}%
+\end{pmatrix}
+$\\\hline
+$%
+\begin{array}
+[c]{c}%
+\text{number of}\\
+\text{used observations}%
+\end{array}
+$ & $n$ & $M$\\\hline
+sample used & $\boldsymbol{X}_{\left(  1\right)  },\boldsymbol{X}_{\left(
+2\right)  },\cdots,\boldsymbol{X}_{\left(  n\right)  }$ & $\boldsymbol{X}%
+_{\left(  1\right)  },\boldsymbol{X}_{\left(  2\right)  },\cdots
+,\boldsymbol{X}_{\left(  M\right)  }$\\\hline
+$k$th observation & $\boldsymbol{X}_{\left(  k\right)  }$ & $\boldsymbol{X}%
+_{\left(  k\right)  }$\\\hline
+sample mean & $\bar{\boldsymbol{X}}^{c}=\frac{1}{n}{\sum\limits_{k=1}^{n}%
+}\boldsymbol{X}_{\left(  k\right)  }$ & $\bar{\boldsymbol{X}}^{r}=\frac{1}%
+{M}{\sum\limits_{k=1}^{M}}\boldsymbol{X}_{\left(  k\right)  }$\\\hline
+sample covariance & $\boldsymbol{S}^{c}=\frac{1}{n-1}{\sum\limits_{k=1}^{n}%
+}\left(  \boldsymbol{X}_{\left(  k\right)  }-\bar{\boldsymbol{X}}^{c}\right)
+\left(  \boldsymbol{X}_{\left(  k\right)  }-\bar{\boldsymbol{X}}^{c}\right)
+^{\top}$ & $\boldsymbol{S}^{r}=\frac{1}{M-1}{\sum\limits_{k=1}^{M}}\left(
+\boldsymbol{X}_{\left(  k\right)  }-\bar{\boldsymbol{X}}^{r}\right)  \left(
+\boldsymbol{X}_{\left(  k\right)  }-\bar{\boldsymbol{X}}^{r}\right)  ^{\top}%
+$\\\hline
+sample correlation & $\boldsymbol{R}^{c}$ & $\boldsymbol{R}^{r}$\\\hline
+$\boldsymbol{D}$ & $\boldsymbol{D}^{c}=\mathrm{diag}\left(  \mathrm{diag}%
+\left(  \boldsymbol{S}^{c}\right)  \right)  $ & $\boldsymbol{D}^{r}%
+=\mathrm{diag}\left(  \mathrm{diag}\left(  \boldsymbol{S}^{r}\right)  \right)
+$\\\hline
+scaledX & $%
+\begin{array}
+[c]{c}%
+\boldsymbol{X}^{\ast c}=\left(  \boldsymbol{X}-\boldsymbol{1}\left(
+\bar{\boldsymbol{X}}^{c}\right)  ^{\top}\right)  \left(  \boldsymbol{D}%
+^{c}\right)  ^{-\frac{1}{2}}\\
+=%
+\begin{pmatrix}
+\left(  \boldsymbol{X}_{\left(  1\right)  }^{\ast c}\right)  ^{\top}\\
+\left(  \boldsymbol{X}_{\left(  2\right)  }^{\ast c}\right)  ^{\top}\\
+\vdots\\
+\left(  \boldsymbol{X}_{\left(  n\right)  }^{\ast c}\right)  ^{\top}%
+\end{pmatrix}
+\end{array}
+$ & $%
+\begin{array}
+[c]{c}%
+\boldsymbol{X}^{\ast r}=\left(  \boldsymbol{X}-\boldsymbol{1}\left(
+\bar{\boldsymbol{X}}^{r}\right)  ^{\top}\right)  \left(  \boldsymbol{D}%
+^{r}\right)  ^{-\frac{1}{2}}\\
+=%
+\begin{pmatrix}
+\left(  \boldsymbol{X}_{\left(  1\right)  }^{\ast r}\right)  ^{\top}\\
+\left(  \boldsymbol{X}_{\left(  2\right)  }^{\ast r}\right)  ^{\top}\\
+\vdots\\
+\left(  \boldsymbol{X}_{\left(  n\right)  }^{\ast r}\right)  ^{\top}%
+\end{pmatrix}
+\end{array}
+$\\\hline
+$k$th scaled observation & $\boldsymbol{X}_{\left(  k\right)  }^{\ast
+c}=\left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\left(  \boldsymbol{X}%
+_{\left(  k\right)  }-\bar{\boldsymbol{X}}^{c}\right)  $ & $\boldsymbol{X}%
+_{\left(  k\right)  }^{\ast r}=\left(  \boldsymbol{D}^{r}\right)  ^{-\frac
+{1}{2}}\left(  \boldsymbol{X}_{\left(  k\right)  }-\bar{\boldsymbol{X}}%
+^{r}\right)  $\\\hline
+sample mean of scaledX & $\bar{\boldsymbol{X}}^{\ast c}=\frac{1}{n}%
+\sum\limits_{k=1}^{n}\boldsymbol{X}_{\left(  k\right)  }^{\ast c}%
+=\boldsymbol{0}$ & $\bar{\boldsymbol{X}}^{\ast r}=\frac{1}{M}\sum
+\limits_{k=1}^{M}\boldsymbol{X}_{\left(  k\right)  }^{\ast r}=\boldsymbol{0}$
+(a)\\\hline
+cov(scaledX) & \multicolumn{1}{|l|}{$%
+\begin{array}
+[c]{c}%
+\boldsymbol{S}^{\ast c}=\boldsymbol{R}^{c}\\
+=\frac{1}{n-1}{\sum\limits_{k=1}^{n}}\left(  \boldsymbol{X}_{\left(  k\right)
+}^{\ast c}-\bar{\boldsymbol{X}}^{\ast c}\right)  \left(  \boldsymbol{X}%
+_{\left(  k\right)  }^{\ast c}-\bar{\boldsymbol{X}}^{\ast c}\right)  ^{\top}\\
+=\frac{1}{n-1}{\sum\limits_{k=1}^{n}}\boldsymbol{X}_{\left(  k\right)  }^{\ast
+c}\left(  \boldsymbol{X}_{\left(  k\right)  }^{\ast c}\right)  ^{\top}\\
+=\left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\boldsymbol{S}^{c}\left(
+\boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}%
+\end{array}
+$} & $%
+\begin{array}
+[c]{c}%
+\boldsymbol{S}^{\ast r}=\boldsymbol{R}^{r}\\
+=\frac{1}{M-1}{\sum\limits_{k=1}^{M}}\left(  \boldsymbol{X}_{\left(  k\right)
+}^{\ast r}-\bar{\boldsymbol{X}}^{\ast r}\right)  \left(  \boldsymbol{X}%
+_{\left(  k\right)  }^{\ast r}-\bar{\boldsymbol{X}}^{\ast r}\right)  ^{\top}\\
+=\frac{1}{M-1}{\sum\limits_{k=1}^{M}}\boldsymbol{X}_{\left(  k\right)  }^{\ast
+r}\left(  \boldsymbol{X}_{\left(  k\right)  }^{\ast r}\right)  ^{\top}\\
+=\left(  \boldsymbol{D}^{r}\right)  ^{-\frac{1}{2}}\boldsymbol{S}^{r}\left(
+\boldsymbol{D}^{r}\right)  ^{-\frac{1}{2}}\text{ (b)}%
+\end{array}
+$\\\hline
+\end{tabular}
+}
+\end{center}
+\end{table}
+
+\begin{table}[!htbp]
+\caption{Results of (3), (4), (7), and (8).}%
+\label{Table:4-8}
+\begin{center}
+{\small \hspace*{-1.3cm}
+\begin{tabular}
+[c]{|c|c|c|}\hline
+& $\boldsymbol{Y}$, classical (3), (4) & $\boldsymbol{Y}$, robust (7),
+(8)\\\hline
+data matrix & $%
+\begin{array}
+[c]{c}%
+\boldsymbol{Y}=\text{scale}\left(  \boldsymbol{X}\right)  =\boldsymbol{X}%
+^{\ast c}\\
+=\left(  \boldsymbol{X}-\boldsymbol{1}\left(  \bar{\boldsymbol{X}}^{c}\right)
+^{\top}\right)  \left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}%
+\end{array}
+$ & $%
+\begin{array}
+[c]{c}%
+\boldsymbol{Y}=\text{scale}\left(  \boldsymbol{X}\right)  =\boldsymbol{X}%
+^{\ast c}\\
+=\left(  \boldsymbol{X}-\boldsymbol{1}\left(  \bar{\boldsymbol{X}}^{c}\right)
+^{\top}\right)  \left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}%
+\end{array}
+$\\\hline
+$%
+\begin{array}
+[c]{c}%
+\text{number of}\\
+\text{used observations}%
+\end{array}
+$ & $n$ & $M$\\\hline
+sample used & $\boldsymbol{Y}_{\left(  1\right)  },\boldsymbol{Y}_{\left(
+2\right)  },\cdots,\boldsymbol{Y}_{\left(  n\right)  }$ & $\boldsymbol{Y}%
+_{\left(  1\right)  },\boldsymbol{Y}_{\left(  2\right)  },\cdots
+,\boldsymbol{Y}_{\left(  M\right)  }$\\\hline
+$k$th observation & $\boldsymbol{Y}_{\left(  k\right)  }=\left(
+\boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(
+k\right)  }-\bar{\boldsymbol{X}}^{c}\right)  =\boldsymbol{X}_{\left(
+k\right)  }^{\ast c}$ & $\boldsymbol{Y}_{\left(  k\right)  }=\left(
+\boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(
+k\right)  }-\bar{\boldsymbol{X}}^{c}\right)  =\boldsymbol{X}_{\left(
+k\right)  }^{\ast c}$\\\hline
+sample mean & $\bar{\boldsymbol{Y}}^{c}=\frac{1}{n}{\sum\limits_{k=1}^{n}%
+}\boldsymbol{Y}_{\left(  k\right)  }=\boldsymbol{0}$ (c) & $%
+\begin{array}
+[c]{c}%
+\bar{\boldsymbol{Y}}^{r}=\frac{1}{M}{\sum\limits_{k=1}^{M}}\boldsymbol{Y}%
+_{\left(  k\right)  }\\
+=\left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\left(  \bar{\boldsymbol{X}%
+}^{r}-\bar{\boldsymbol{X}}^{c}\right)
+\end{array}
+$ (f)\\\hline
+sample covariance & $%
+\begin{array}
+[c]{c}%
+\tilde{\boldsymbol{S}}^{c}=\frac{1}{n-1}{\sum\limits_{k=1}^{n}}\left(
+\boldsymbol{Y}_{\left(  k\right)  }-\bar{\boldsymbol{Y}}^{c}\right)  \left(
+\boldsymbol{Y}_{\left(  k\right)  }-\bar{\boldsymbol{Y}}^{c}\right)  ^{\top}\\
+=\frac{1}{n-1}{\sum\limits_{k=1}^{n}}\boldsymbol{Y}_{\left(  k\right)
+}\boldsymbol{Y}_{\left(  k\right)  }^{\top}%
+\end{array}
+$ & $\tilde{\boldsymbol{S}}^{r}=\frac{1}{M-1}{\sum\limits_{k=1}^{M}}\left(
+\boldsymbol{Y}_{\left(  k\right)  }-\bar{\boldsymbol{Y}}^{r}\right)  \left(
+\boldsymbol{Y}_{\left(  k\right)  }-\bar{\boldsymbol{Y}}^{r}\right)  ^{\top}%
+$\\\hline
+sample correlation & $\tilde{\boldsymbol{R}}^{c}$ & $\tilde{\boldsymbol{R}%
+}^{r}$\\\hline
+$\boldsymbol{D}$ & $\tilde{\boldsymbol{D}}^{c}=\mathrm{diag}\left(
+\mathrm{diag}\left(  \tilde{\boldsymbol{S}}^{c}\right)  \right)
+=\boldsymbol{E}$ (d) & $\tilde{\boldsymbol{D}}^{r}=\mathrm{diag}\left(
+\mathrm{diag}\left(  \tilde{\boldsymbol{S}}^{r}\right)  \right)  $\\\hline
+scaledX & $%
+\begin{array}
+[c]{c}%
+\boldsymbol{Y}^{\ast c}=\left(  \boldsymbol{Y}-\boldsymbol{1}\left(
+\bar{\boldsymbol{Y}}^{c}\right)  ^{\top}\right)  \left(  \tilde{\boldsymbol{D}%
+}^{c}\right)  ^{-\frac{1}{2}}\\
+=%
+\begin{pmatrix}
+\left(  \boldsymbol{Y}_{\left(  1\right)  }^{\ast c}\right)  ^{\top}\\
+\left(  \boldsymbol{Y}_{\left(  2\right)  }^{\ast c}\right)  ^{\top}\\
+\vdots\\
+\left(  \boldsymbol{Y}_{\left(  n\right)  }^{\ast c}\right)  ^{\top}%
+\end{pmatrix}
+\end{array}
+$ & $%
+\begin{array}
+[c]{c}%
+\boldsymbol{Y}^{\ast r}=\left(  \boldsymbol{Y}-\boldsymbol{1}\left(
+\bar{\boldsymbol{Y}}^{r}\right)  ^{\top}\right)  \left(  \tilde{\boldsymbol{D}%
+}^{r}\right)  ^{-\frac{1}{2}}\\
+=%
+\begin{pmatrix}
+\left(  \boldsymbol{Y}_{\left(  1\right)  }^{\ast r}\right)  ^{\top}\\
+\left(  \boldsymbol{Y}_{\left(  2\right)  }^{\ast r}\right)  ^{\top}\\
+\vdots\\
+\left(  \boldsymbol{Y}_{\left(  n\right)  }^{\ast r}\right)  ^{\top}%
+\end{pmatrix}
+\end{array}
+$\\\hline
+$k$th scaled observation & $\boldsymbol{Y}_{\left(  k\right)  }^{\ast
+c}=\left(  \tilde{\boldsymbol{D}}^{c}\right)  ^{-\frac{1}{2}}\left(
+\boldsymbol{Y}_{\left(  k\right)  }-\bar{\boldsymbol{Y}}^{c}\right)
+=\boldsymbol{Y}_{\left(  k\right)  }$ (e) & $\boldsymbol{Y}_{\left(  k\right)
+}^{\ast r}=\left(  \tilde{\boldsymbol{D}}^{r}\right)  ^{-\frac{1}{2}}\left(
+\boldsymbol{Y}_{\left(  k\right)  }-\bar{\boldsymbol{Y}}^{r}\right)  $\\\hline
+sample mean of scaledX & $\bar{\boldsymbol{Y}}^{\ast c}=\frac{1}{n}%
+\sum\limits_{k=1}^{n}\boldsymbol{Y}_{\left(  k\right)  }^{\ast c}%
+=\boldsymbol{0}$ & $\bar{\boldsymbol{Y}}^{\ast r}=\frac{1}{M}\sum
+\limits_{k=1}^{M}\boldsymbol{Y}_{\left(  k\right)  }^{\ast r}=\boldsymbol{0}$
+(g)\\\hline
+cov(scaledX) & \multicolumn{1}{|l|}{$%
+\begin{array}
+[c]{c}%
+\tilde{\boldsymbol{S}}^{\ast c}=\tilde{\boldsymbol{R}}^{c}\\
+=\frac{1}{n-1}{\sum\limits_{k=1}^{n}}\left(  \boldsymbol{Y}_{\left(  k\right)
+}^{\ast c}-\bar{\boldsymbol{Y}}^{\ast c}\right)  \left(  \boldsymbol{Y}%
+_{\left(  k\right)  }^{\ast c}-\bar{\boldsymbol{Y}}^{\ast c}\right)  ^{\top}\\
+=\frac{1}{n-1}{\sum\limits_{k=1}^{n}}\boldsymbol{Y}_{\left(  k\right)  }^{\ast
+c}\left(  \boldsymbol{Y}_{\left(  k\right)  }^{\ast c}\right)  ^{\top}\\
+=\left(  \tilde{\boldsymbol{D}}^{c}\right)  ^{-\frac{1}{2}}\tilde
+{\boldsymbol{S}}^{c}\left(  \tilde{\boldsymbol{D}}^{c}\right)  ^{-\frac{1}{2}}%
+\end{array}
+$} & $%
+\begin{array}
+[c]{c}%
+\tilde{\boldsymbol{S}}^{\ast r}=\tilde{\boldsymbol{R}}^{r}\\
+=\frac{1}{M-1}{\sum\limits_{k=1}^{M}}\left(  \boldsymbol{Y}_{\left(  k\right)
+}^{\ast r}-\bar{\boldsymbol{Y}}^{\ast r}\right)  \left(  \boldsymbol{Y}%
+_{\left(  k\right)  }^{\ast r}-\bar{\boldsymbol{Y}}^{\ast r}\right)  ^{\top}\\
+=\frac{1}{M-1}{\sum\limits_{k=1}^{M}}\boldsymbol{Y}_{\left(  k\right)  }^{\ast
+r}\left(  \boldsymbol{Y}_{\left(  k\right)  }^{\ast r}\right)  ^{\top}\\
+=\left(  \tilde{\boldsymbol{D}}^{r}\right)  ^{-\frac{1}{2}}\tilde
+{\boldsymbol{S}}^{r}\left(  \tilde{\boldsymbol{D}}^{r}\right)  ^{-\frac{1}{2}%
+}\text{ (h)}%
+\end{array}
+$\\\hline
+\end{tabular}
+}
+\end{center}
+\end{table}
+
+To compare the 8 combinations, we summarize some useful results in Tables
+\ref{Table:2-6} and \ref{Table:4-8}. There are some points in Tables
+\ref{Table:2-6} and \ref{Table:4-8} that are proved here.
+
+\noindent\textbf{Proof.} (a)
+\begin{align*}
+\bar{\boldsymbol{X}}^{\ast r}  &  =\frac{1}{M}\sum\limits_{k=1}^{M}%
+\boldsymbol{X}_{\left(  k\right)  }^{\ast r}\\
+&  =\frac{1}{M}\sum\limits_{k=1}^{M}\left(  \boldsymbol{D}^{r}\right)
+^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(  k\right)  }-\bar{\boldsymbol{X}%
+}^{r}\right) \\
+&  =\left(  \boldsymbol{D}^{r}\right)  ^{-\frac{1}{2}}\frac{1}{M}%
+\sum\limits_{k=1}^{M}\left(  \boldsymbol{X}_{\left(  k\right)  }%
+-\bar{\boldsymbol{X}}^{r}\right) \\
+&  =\left(  \boldsymbol{D}^{r}\right)  ^{-\frac{1}{2}}\left(  \bar
+{\boldsymbol{X}}^{r}-\bar{\boldsymbol{X}}^{r}\right) \\
+&  =\boldsymbol{0}.
+\end{align*}
+
+
+(b)%
+\begin{align*}
+\boldsymbol{S}^{\ast r}  &  =\boldsymbol{R}^{r}\\
+&  =\frac{1}{M-1}{\sum\limits_{k=1}^{M}}\left(  \boldsymbol{X}_{\left(
+k\right)  }^{\ast r}-\bar{\boldsymbol{X}}^{\ast r}\right)  \left(
+\boldsymbol{X}_{\left(  k\right)  }^{\ast r}-\bar{\boldsymbol{X}}^{\ast
+r}\right)  ^{\top}\\
+&  =\frac{1}{M-1}{\sum\limits_{k=1}^{M}}\boldsymbol{X}_{\left(  k\right)
+}^{\ast r}\left(  \boldsymbol{X}_{\left(  k\right)  }^{\ast r}\right)  ^{\top
+}\\
+&  =\frac{1}{M-1}{\sum\limits_{k=1}^{M}}\left(  \boldsymbol{D}^{r}\right)
+^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(  k\right)  }-\bar{\boldsymbol{X}%
+}^{r}\right)  \left(  \boldsymbol{X}_{\left(  k\right)  }-\bar{\boldsymbol{X}%
+}^{r}\right)  ^{\top}\left(  \boldsymbol{D}^{r}\right)  ^{-\frac{1}{2}}\\
+&  =\left(  \boldsymbol{D}^{r}\right)  ^{-\frac{1}{2}}\left[  \frac{1}%
+{M-1}{\sum\limits_{k=1}^{M}}\left(  \boldsymbol{X}_{\left(  k\right)  }%
+-\bar{\boldsymbol{X}}^{r}\right)  \left(  \boldsymbol{X}_{\left(  k\right)
+}-\bar{\boldsymbol{X}}^{r}\right)  ^{\top}\right]  \left(  \boldsymbol{D}%
+^{r}\right)  ^{-\frac{1}{2}}\\
+&  =\left(  \boldsymbol{D}^{r}\right)  ^{-\frac{1}{2}}\boldsymbol{S}%
+^{r}\left(  \boldsymbol{D}^{r}\right)  ^{-\frac{1}{2}}.
+\end{align*}
+
+
+(c)%
+\begin{align*}
+\bar{\boldsymbol{Y}}^{c}  &  =\frac{1}{n}{\sum\limits_{k=1}^{n}}%
+\boldsymbol{Y}_{\left(  k\right)  }\\
+&  =\frac{1}{n}{\sum\limits_{k=1}^{n}}\left(  \boldsymbol{D}^{c}\right)
+^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(  k\right)  }-\bar{\boldsymbol{X}%
+}^{c}\right) \\
+&  =\left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\frac{1}{n}%
+{\sum\limits_{k=1}^{n}}\left(  \boldsymbol{X}_{\left(  k\right)  }%
+-\bar{\boldsymbol{X}}^{c}\right) \\
+&  =\left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\left(  \bar
+{\boldsymbol{X}}^{c}-\bar{\boldsymbol{X}}^{c}\right) \\
+&  =\boldsymbol{0}.
+\end{align*}
+
+
+(d) By Theorem \ref{Theorem: R equal}, we have $\boldsymbol{\tilde{S}}%
+^{c}=\boldsymbol{R}^{c}$, thus%
+\begin{align*}
+\tilde{\boldsymbol{D}}^{c}  &  =\mathrm{diag}\left(  \mathrm{diag}\left(
+\tilde{\boldsymbol{S}}^{c}\right)  \right) \\
+&  =\mathrm{diag}\left(  \mathrm{diag}\left(  \boldsymbol{R}^{c}\right)
+\right) \\
+&  =\mathrm{diag}\left(  \left(  1,1,\cdots,1\right)  \right) \\
+&  =\boldsymbol{E}.
+\end{align*}
+
+
+(e)%
+\begin{align*}
+\boldsymbol{Y}_{\left(  k\right)  }^{\ast c}  &  =\left(  \tilde
+{\boldsymbol{D}}^{c}\right)  ^{-\frac{1}{2}}\left(  \boldsymbol{Y}_{\left(
+k\right)  }-\bar{\boldsymbol{Y}}^{c}\right) \\
+&  =\boldsymbol{E}^{-\frac{1}{2}}\left(  \boldsymbol{Y}_{\left(  k\right)
+}-\boldsymbol{0}\right) \\
+&  =\boldsymbol{Y}_{\left(  k\right)  }.
+\end{align*}
+
+
+(f)
+\begin{align*}
+\bar{\boldsymbol{Y}}^{r}  &  =\frac{1}{M}{\sum\limits_{k=1}^{M}}%
+\boldsymbol{Y}_{\left(  k\right)  }\\
+&  =\frac{1}{M}{\sum\limits_{k=1}^{M}}\left(  \boldsymbol{D}^{c}\right)
+^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(  k\right)  }-\bar{\boldsymbol{X}%
+}^{c}\right) \\
+&  =\left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\frac{1}{M}%
+{\sum\limits_{k=1}^{M}}\left(  \boldsymbol{X}_{\left(  k\right)  }%
+-\bar{\boldsymbol{X}}^{c}\right) \\
+&  =\left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\left(  \bar
+{\boldsymbol{X}}^{r}-\bar{\boldsymbol{X}}^{c}\right)  .
+\end{align*}
+
+
+(g)%
+\begin{align*}
+\bar{\boldsymbol{Y}}^{\ast r}  &  =\frac{1}{M}\sum\limits_{k=1}^{M}%
+\boldsymbol{Y}_{\left(  k\right)  }^{\ast r}\\
+&  =\frac{1}{M}\sum\limits_{k=1}^{M}\left(  \tilde{\boldsymbol{D}}^{r}\right)
+^{-\frac{1}{2}}\left(  \boldsymbol{Y}_{\left(  k\right)  }-\bar{\boldsymbol{Y}%
+}^{r}\right) \\
+&  =\left(  \tilde{\boldsymbol{D}}^{r}\right)  ^{-\frac{1}{2}}\frac{1}{M}%
+\sum\limits_{k=1}^{M}\left(  \boldsymbol{Y}_{\left(  k\right)  }%
+-\bar{\boldsymbol{Y}}^{r}\right) \\
+&  =\left(  \tilde{\boldsymbol{D}}^{r}\right)  ^{-\frac{1}{2}}\left(
+\bar{\boldsymbol{Y}}^{r}-\bar{\boldsymbol{Y}}^{r}\right) \\
+&  =\boldsymbol{0}.
+\end{align*}
+
+
+(h)%
+\begin{align*}
+\tilde{\boldsymbol{S}}^{\ast r}  &  =\tilde{\boldsymbol{R}}^{r}\\
+&  =\frac{1}{M-1}{\sum\limits_{k=1}^{M}}\left(  \boldsymbol{Y}_{\left(
+k\right)  }^{\ast r}-\bar{\boldsymbol{Y}}^{\ast r}\right)  \left(
+\boldsymbol{Y}_{\left(  k\right)  }^{\ast r}-\bar{\boldsymbol{Y}}^{\ast
+r}\right)  ^{\top}\\
+&  =\frac{1}{M-1}{\sum\limits_{k=1}^{M}}\boldsymbol{Y}_{\left(  k\right)
+}^{\ast r}\left(  \boldsymbol{Y}_{\left(  k\right)  }^{\ast r}\right)  ^{\top
+}\\
+&  =\frac{1}{M-1}{\sum\limits_{k=1}^{M}}\left(  \tilde{\boldsymbol{D}}%
+^{r}\right)  ^{-\frac{1}{2}}\left(  \boldsymbol{Y}_{\left(  k\right)  }%
+-\bar{\boldsymbol{Y}}^{r}\right)  \left(  \boldsymbol{Y}_{\left(  k\right)
+}-\bar{\boldsymbol{Y}}^{r}\right)  ^{\top}\left(  \tilde{\boldsymbol{D}}%
+^{r}\right)  ^{-\frac{1}{2}}\\
+&  =\left(  \tilde{\boldsymbol{D}}^{r}\right)  ^{-\frac{1}{2}}\left[  \frac
+{1}{M-1}{\sum\limits_{k=1}^{M}}\left(  \boldsymbol{Y}_{\left(  k\right)
+}-\bar{\boldsymbol{Y}}^{r}\right)  \left(  \boldsymbol{Y}_{\left(  k\right)
+}-\bar{\boldsymbol{Y}}^{r}\right)  ^{\top}\right]  \left(  \tilde
+{\boldsymbol{D}}^{r}\right)  ^{-\frac{1}{2}}\\
+&  =\left(  \tilde{\boldsymbol{D}}^{r}\right)  ^{-\frac{1}{2}}\tilde
+{\boldsymbol{S}}^{r}\left(  \tilde{\boldsymbol{D}}^{r}\right)  ^{-\frac{1}{2}%
+}.
+\end{align*}
+
+
+Define the multiplication of two vectors by
+\begin{align*}
+\mathbf{x}\cdot\mathbf{y}  &  =\left(  x_{1},x_{2},\cdots,x_{p}\right)
+\cdot\left(  y_{1},y_{2},\cdots,y_{p}\right) \\
+&  =\left(  x_{1}y_{1},x_{2}y_{2},\cdots,x_{p}y_{p}\right)  .
+\end{align*}
+
+
+To prove Theorem \ref{Theorem: R equal}, we need the following lemma.
+
+\begin{lemma}
+\label{Lemma}Let
+\[
+\boldsymbol{\Lambda}_{1}=%
+\begin{pmatrix}
+\lambda_{1} &  &  & \\
+& \lambda_{2} &  & \\
+&  & \ddots & \\
+&  &  & \lambda_{p}%
+\end{pmatrix}
+,\;\boldsymbol{\Lambda}_{2}=%
+\begin{pmatrix}
+\mu_{1} &  &  & \\
+& \mu_{2} &  & \\
+&  & \ddots & \\
+&  &  & \mu_{p}%
+\end{pmatrix}
+,\;\boldsymbol{A}=\left(  a_{ij}\right)  _{p\times p}.
+\]
+Then
+\begin{align*}
+\mathrm{diag}\left(  \boldsymbol{\Lambda}_{1}\boldsymbol{A\Lambda}_{2}\right)
+&  =\mathrm{diag}\left(  \boldsymbol{\Lambda}_{1}\right)  \cdot\mathrm{diag}%
+\left(  \boldsymbol{A}\right)  \cdot\mathrm{diag}\left(  \boldsymbol{\Lambda
+}_{2}\right)  ,\\
+\mathrm{diag}\left(  \boldsymbol{\Lambda}_{1}\boldsymbol{\Lambda}_{2}\right)
+&  =\mathrm{diag}\left(  \boldsymbol{\Lambda}_{1}\right)  \cdot\mathrm{diag}%
+\left(  \boldsymbol{\Lambda}_{2}\right)  .
+\end{align*}
+
+\end{lemma}
+
+\noindent\textbf{Proof.}
+\begin{align*}
+\boldsymbol{\Lambda}_{1}\boldsymbol{A\Lambda}_{2}  &  =%
+\begin{pmatrix}
+\lambda_{1} &  &  & \\
+& \lambda_{2} &  & \\
+&  & \ddots & \\
+&  &  & \lambda_{p}%
+\end{pmatrix}%
+\begin{pmatrix}
+a_{11} & a_{12} & \cdots & a_{1p}\\
+a_{21} & a_{22} & \cdots & a_{2p}\\
+\vdots & \vdots & \ddots & \vdots\\
+a_{p1} & a_{p2} & \cdots & a_{pp}%
+\end{pmatrix}%
+\begin{pmatrix}
+\mu_{1} &  &  & \\
+& \mu_{2} &  & \\
+&  & \ddots & \\
+&  &  & \mu_{p}%
+\end{pmatrix}
+\\
+&  =%
+\begin{pmatrix}
+\lambda_{1}a_{11}\mu_{1} & \ast & \cdots & \ast\\
+\ast & \lambda_{2}a_{22}\mu_{2} & \cdots & \ast\\
+\vdots & \vdots & \ddots & \vdots\\
+\ast & \ast & \cdots & \lambda_{p}a_{pp}\mu_{p}%
+\end{pmatrix}
+,
+\end{align*}%
+\begin{align*}
+\mathrm{diag}\left(  \boldsymbol{\Lambda}_{1}\boldsymbol{A\Lambda}_{2}\right)
+&  =\left(  \lambda_{1}a_{11}\mu_{1},\lambda_{2}a_{22}\mu_{2},\cdots
+,\lambda_{p}a_{pp}\mu_{p}\right) \\
+&  =\left(  \lambda_{1},\lambda_{2},\cdots,\lambda_{p}\right)  \cdot\left(
+a_{11},a_{22},\cdots,a_{pp}\right)  \cdot\left(  \mu_{1},\mu_{2},\cdots
+,\mu_{p}\right) \\
+&  =\mathrm{diag}\left(  \boldsymbol{\Lambda}_{1}\right)  \cdot\mathrm{diag}%
+\left(  \boldsymbol{A}\right)  \cdot\mathrm{diag}\left(  \boldsymbol{\Lambda
+}_{2}\right)  .
+\end{align*}
+%
+
+\[
+\boldsymbol{\Lambda}_{1}\boldsymbol{\Lambda}_{2}=%
+\begin{pmatrix}
+\lambda_{1} &  &  & \\
+& \lambda_{2} &  & \\
+&  & \ddots & \\
+&  &  & \lambda_{p}%
+\end{pmatrix}%
+\begin{pmatrix}
+\mu_{1} &  &  & \\
+& \mu_{2} &  & \\
+&  & \ddots & \\
+&  &  & \mu_{p}%
+\end{pmatrix}
+=%
+\begin{pmatrix}
+\lambda_{1}\mu_{1} &  &  & \\
+& \lambda_{2}\mu_{2} &  & \\
+&  & \ddots & \\
+&  &  & \lambda_{p}\mu_{p}%
+\end{pmatrix}
+,
+\]%
+\begin{align*}
+\mathrm{diag}\left(  \boldsymbol{\Lambda}_{1}\boldsymbol{\Lambda}_{2}\right)
+&  =\left(  \lambda_{1}\mu_{1},\lambda_{2}\mu_{2},\cdots,\lambda_{p}\mu
+_{p}\right) \\
+&  =\left(  \lambda_{1},\lambda_{2},\cdots,\lambda_{p}\right)  \cdot\left(
+\mu_{1},\mu_{2},\cdots,\mu_{p}\right) \\
+&  =\mathrm{diag}\left(  \boldsymbol{\Lambda}_{1}\right)  \cdot\mathrm{diag}%
+\left(  \boldsymbol{\Lambda}_{2}\right)  .
+\end{align*}
+
+
+\hfill$\square$
+
+\begin{theorem}
+\label{Theorem: R equal} (a) $\boldsymbol{R}^{c}=\boldsymbol{\tilde{S}}%
+^{c}=\boldsymbol{\tilde{R}}^{c}.$ (b) $\boldsymbol{R}^{r}=\boldsymbol{\tilde
+{R}}^{r}.$
+\end{theorem}
+
+\noindent\textbf{Proof.} (a) We prove $\boldsymbol{R}^{c}=\boldsymbol{\tilde
+{S}}^{c}$ first. Since $\boldsymbol{Y}_{\left(  k\right)  }=\left(
+\boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(
+k\right)  }-\bar{\boldsymbol{X}}^{c}\right)  =\boldsymbol{X}_{\left(
+k\right)  }^{\ast c}$,%
+\begin{align*}
+\boldsymbol{R}^{c}  &  =\frac{1}{n-1}{\sum\limits_{k=1}^{n}}\boldsymbol{X}%
+_{\left(  k\right)  }^{\ast c}\left(  \boldsymbol{X}_{\left(  k\right)
+}^{\ast c}\right)  ^{\top}\\
+&  =\frac{1}{n-1}{\sum\limits_{k=1}^{n}}\boldsymbol{Y}_{\left(  k\right)
+}\boldsymbol{Y}_{\left(  k\right)  }^{\top}\\
+&  =\boldsymbol{\tilde{S}}^{c}.
+\end{align*}
+Next we prove $\boldsymbol{\tilde{R}}^{c}=\boldsymbol{\tilde{S}}^{c}$. From
+Table \ref{Table:4-8} (e), we have $\boldsymbol{Y}_{\left(  k\right)  }^{\ast
+c}=\boldsymbol{Y}_{\left(  k\right)  }$, thus%
+\begin{align*}
+\boldsymbol{\tilde{R}}^{c}  &  =\frac{1}{n-1}{\sum\limits_{k=1}^{n}%
+}\boldsymbol{Y}_{\left(  k\right)  }^{\ast c}\left(  \boldsymbol{Y}_{\left(
+k\right)  }^{\ast c}\right)  ^{\top}\\
+&  =\frac{1}{n-1}{\sum\limits_{k=1}^{n}}\boldsymbol{Y}_{\left(  k\right)
+}\boldsymbol{Y}_{\left(  k\right)  }^{\top}\\
+&  =\boldsymbol{\tilde{S}}^{c}.
+\end{align*}
+
+
+(b) We have%
+\begin{align*}
+\boldsymbol{R}^{r}  &  =\boldsymbol{S}^{\ast r}=\frac{1}{M-1}{\sum
+\limits_{k=1}^{M}}\boldsymbol{X}_{\left(  k\right)  }^{\ast r}\left(
+\boldsymbol{X}_{\left(  k\right)  }^{\ast r}\right)  ^{\top},\\
+\tilde{\boldsymbol{R}}^{r}  &  =\tilde{\boldsymbol{S}}^{\ast r}=\frac{1}%
+{M-1}{\sum\limits_{k=1}^{M}}\boldsymbol{Y}_{\left(  k\right)  }^{\ast
+r}\left(  \boldsymbol{Y}_{\left(  k\right)  }^{\ast r}\right)  ^{\top}.
+\end{align*}
+To prove that $\boldsymbol{R}^{r}=\boldsymbol{\tilde{R}}^{r}$, it suffices to
+prove that%
+\begin{equation}
+\boldsymbol{X}_{\left(  k\right)  }^{\ast r}=\boldsymbol{Y}_{\left(  k\right)
+}^{\ast r}. \label{Xk_Yk}%
+\end{equation}
+Write%
+\begin{align*}
+\boldsymbol{X}_{\left(  k\right)  }^{\ast r}  &  =\left(  \boldsymbol{D}%
+^{r}\right)  ^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(  k\right)  }%
+-\bar{\boldsymbol{X}}^{r}\right)  ,\\
+\boldsymbol{Y}_{\left(  k\right)  }^{\ast r}  &  =\left(  \tilde
+{\boldsymbol{D}}^{r}\right)  ^{-\frac{1}{2}}\left(  \boldsymbol{Y}_{\left(
+k\right)  }-\bar{\boldsymbol{Y}}^{r}\right)  ,\\
+\boldsymbol{Y}_{\left(  k\right)  }  &  =\left(  \boldsymbol{D}^{c}\right)
+^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(  k\right)  }-\bar{\boldsymbol{X}%
+}^{c}\right)  ,
+\end{align*}
+from Table \ref{Table:4-8} (f), we have%
+\[
+\bar{\boldsymbol{Y}}^{r}=\left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}%
+}\left(  \bar{\boldsymbol{X}}^{r}-\bar{\boldsymbol{X}}^{c}\right)  .
+\]
+Thus
+\begin{align*}
+\boldsymbol{Y}_{\left(  k\right)  }^{\ast r}  &  =\left(  \tilde
+{\boldsymbol{D}}^{r}\right)  ^{-\frac{1}{2}}\left(  \boldsymbol{Y}_{\left(
+k\right)  }-\bar{\boldsymbol{Y}}^{r}\right) \\
+&  =\left(  \tilde{\boldsymbol{D}}^{r}\right)  ^{-\frac{1}{2}}\left[  \left(
+\boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(
+k\right)  }-\bar{\boldsymbol{X}}^{c}\right)  -\left(  \boldsymbol{D}%
+^{c}\right)  ^{-\frac{1}{2}}\left(  \bar{\boldsymbol{X}}^{r}-\bar
+{\boldsymbol{X}}^{c}\right)  \right] \\
+&  =\left(  \tilde{\boldsymbol{D}}^{r}\right)  ^{-\frac{1}{2}}\left(
+\boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(
+k\right)  }-\bar{\boldsymbol{X}}^{r}\right)  .
+\end{align*}
+To prove (\ref{Xk_Yk}), it suffices to prove
+\[
+\left(  \tilde{\boldsymbol{D}}^{r}\right)  ^{-\frac{1}{2}}\left(
+\boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}=\left(  \boldsymbol{D}^{r}\right)
+^{-\frac{1}{2}},
+\]
+which reduces to prove
+\[
+\tilde{\boldsymbol{D}}^{r}\boldsymbol{D}^{c}=\boldsymbol{D}^{r},
+\]
+that is,%
+\[
+\mathrm{diag}\left(  \mathrm{diag}\left(  \tilde{\boldsymbol{S}}^{r}\right)
+\right)  \cdot\mathrm{diag}\left(  \mathrm{diag}\left(  \boldsymbol{S}%
+^{c}\right)  \right)  =\mathrm{diag}\left(  \mathrm{diag}\left(
+\boldsymbol{S}^{r}\right)  \right)  ,
+\]
+which is equivalent to
+\[
+\mathrm{diag}\left(  \tilde{\boldsymbol{S}}^{r}\right)  \cdot\mathrm{diag}%
+\left(  \boldsymbol{S}^{c}\right)  =\mathrm{diag}\left(  \boldsymbol{S}%
+^{r}\right)  .
+\]
+
+
+We have just proved
+\[
+\boldsymbol{Y}_{\left(  k\right)  }-\bar{\boldsymbol{Y}}^{r}=\left(
+\boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(
+k\right)  }-\bar{\boldsymbol{X}}^{r}\right)  ,
+\]
+and thus
+\begin{align*}
+\tilde{\boldsymbol{S}}^{r}  &  =\frac{1}{M-1}{\sum\limits_{k=1}^{M}}\left(
+\boldsymbol{Y}_{\left(  k\right)  }-\bar{\boldsymbol{Y}}^{r}\right)  \left(
+\boldsymbol{Y}_{\left(  k\right)  }-\bar{\boldsymbol{Y}}^{r}\right)  ^{\top}\\
+&  =\frac{1}{M-1}{\sum\limits_{k=1}^{M}}\left(  \boldsymbol{D}^{c}\right)
+^{-\frac{1}{2}}\left(  \boldsymbol{X}_{\left(  k\right)  }-\bar{\boldsymbol{X}%
+}^{r}\right)  \left(  \boldsymbol{X}_{\left(  k\right)  }-\bar{\boldsymbol{X}%
+}^{r}\right)  ^{\top}\left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\\
+&  =\left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\left[  \frac{1}%
+{M-1}{\sum\limits_{k=1}^{M}}\left(  \boldsymbol{X}_{\left(  k\right)  }%
+-\bar{\boldsymbol{X}}^{r}\right)  \left(  \boldsymbol{X}_{\left(  k\right)
+}-\bar{\boldsymbol{X}}^{r}\right)  ^{\top}\right]  \left(  \boldsymbol{D}%
+^{c}\right)  ^{-\frac{1}{2}}\\
+&  =\left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\boldsymbol{S}%
+^{r}\left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}.
+\end{align*}
+Consequently,
+\begin{align*}
+\mathrm{diag}\left(  \tilde{\boldsymbol{S}}^{r}\right)   &  =\mathrm{diag}%
+\left(  \left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\boldsymbol{S}%
+^{r}\left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}}\right) \\
+&  =\mathrm{diag}\left(  \left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}%
+}\right)  \cdot\mathrm{diag}\left(  \boldsymbol{S}^{r}\right)  \cdot
+\mathrm{diag}\left(  \left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}%
+}\right)  \text{ (Lemma \ref{Lemma})}\\
+&  =\mathrm{diag}\left(  \left(  \boldsymbol{D}^{c}\right)  ^{-\frac{1}{2}%
+}\right)  \cdot\mathrm{diag}\left(  \left(  \boldsymbol{D}^{c}\right)
+^{-\frac{1}{2}}\right)  \cdot\mathrm{diag}\left(  \boldsymbol{S}^{r}\right) \\
+&  =\mathrm{diag}\left(  \left(  \boldsymbol{D}^{c}\right)  ^{-1}\right)
+\cdot\mathrm{diag}\left(  \boldsymbol{S}^{r}\right)  \text{ (Lemma
+\ref{Lemma}).}%
+\end{align*}
+Finally,%
+\begin{align*}
+\mathrm{diag}\left(  \tilde{\boldsymbol{S}}^{r}\right)  \cdot\mathrm{diag}%
+\left(  \boldsymbol{S}^{c}\right)   &  =\mathrm{diag}\left(  \left(
+\boldsymbol{D}^{c}\right)  ^{-1}\right)  \cdot\mathrm{diag}\left(
+\boldsymbol{S}^{r}\right)  \cdot\mathrm{diag}\left(  \boldsymbol{S}^{c}\right)
+\\
+&  =\mathrm{diag}\left(  \left(  \boldsymbol{D}^{c}\right)  ^{-1}\right)
+\cdot\mathrm{diag}\left(  \boldsymbol{S}^{r}\right)  \cdot\mathrm{diag}\left(
+\boldsymbol{D}^{c}\right) \\
+&  =\mathrm{diag}\left(  \left(  \boldsymbol{D}^{c}\right)  ^{-1}\right)
+\cdot\mathrm{diag}\left(  \boldsymbol{D}^{c}\right)  \cdot\mathrm{diag}\left(
+\boldsymbol{S}^{r}\right) \\
+&  =\mathrm{diag}\left(  \boldsymbol{E}\right)  \cdot\mathrm{diag}\left(
+\boldsymbol{S}^{r}\right)  \text{ (Lemma \ref{Lemma})}\\
+&  =\mathrm{diag}\left(  \boldsymbol{S}^{r}\right)  .
+\end{align*}
+The proof is complete. \hfill$\square$
+
+The score of the $k$th observation is summarized in Table \ref{Table:score}.
+The scores method can be \textquotedblleft regression" or \textquotedblleft
+Bartlett". The running matrix can be the covariance matrix ($\boldsymbol{S}$)
+or the correlation matrix ($\boldsymbol{R}$).
+
+\begin{table}[!htbp]
+\caption{The score of the $k$th observation.}%
+\label{Table:score}
+\begin{center}%
+\begin{tabular}
+[c]{|l|l|l|}\hline
+& regression & Bartlett\\\hline
+cor = FALSE & $\tilde{\boldsymbol{f}}_{\left(  k\right)  }=\hat{\boldsymbol{L}%
+}^{\top}\boldsymbol{S}^{-1}\left(  \boldsymbol{X}_{\left(  k\right)  }%
+-\bar{\boldsymbol{X}}\right)  $ & $\hat{\boldsymbol{f}}_{\left(  k\right)
+}=\left(  \hat{\boldsymbol{L}}^{\top}\hat{\boldsymbol{\Psi}}^{-1}%
+\hat{\boldsymbol{L}}\right)  ^{-1}\hat{\boldsymbol{L}}^{\top}\hat
+{\boldsymbol{\Psi}}^{-1}\left(  \boldsymbol{X}_{\left(  k\right)  }%
+-\bar{\boldsymbol{X}}\right)  $\\\hline
+cor = TRUE & $\tilde{\boldsymbol{f}}_{\left(  k\right)  }^{\ast}%
+=\hat{\boldsymbol{L}}^{\ast\top}\boldsymbol{R}^{-1}\boldsymbol{X}_{\left(
+k\right)  }^{\ast}$ & $\hat{\boldsymbol{f}}_{\left(  k\right)  }^{\ast
+}=\left(  \hat{\boldsymbol{L}}^{\ast\top}\hat{\boldsymbol{\Psi}}^{\ast-1}%
+\hat{\boldsymbol{L}}^{\ast}\right)  ^{-1}\hat{\boldsymbol{L}}^{\ast\top}%
+\hat{\boldsymbol{\Psi}}^{\ast-1}\boldsymbol{X}_{\left(  k\right)  }^{\ast}%
+$\\\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+If we define the scoring coefficient $\boldsymbol{S}_{c}$ by%
+\[
+\boldsymbol{S}_{c}=\left\{
+\begin{array}
+[c]{ll}%
+\boldsymbol{\hat{L}}^{\top}\boldsymbol{S}^{-1}, & \text{cor = FALSE,
+scoresMethod = \textquotedblleft regression",}\\
+\left(  \boldsymbol{\hat{L}}^{\top}\boldsymbol{\hat{\Psi}}^{-1}%
+\boldsymbol{\hat{L}}\right)  ^{-1}\boldsymbol{\hat{L}}^{\top}\boldsymbol{\hat
+{\Psi}}^{-1}, & \text{cor = FALSE, scoresMethod = \textquotedblleft
+Bartlett",}\\
+\boldsymbol{\hat{L}}^{\ast\top}\boldsymbol{R}^{-1}, & \text{cor = TRUE,
+scoresMethod = \textquotedblleft regression",}\\
+\left(  \boldsymbol{\hat{L}}^{\ast\top}\boldsymbol{\hat{\Psi}}^{\ast
+-1}\boldsymbol{\hat{L}}^{\ast}\right)  ^{-1}\boldsymbol{\hat{L}}^{\ast\top
+}\boldsymbol{\hat{\Psi}}^{\ast-1}, & \text{cor = TRUE, scoresMethod =
+\textquotedblleft Bartlett",}%
+\end{array}
+\right.
+\]
+then the score of the $k$th observation simplifies to%
+\[
+\boldsymbol{f}_{\left(  k\right)  }=\left\{
+\begin{array}
+[c]{ll}%
+\boldsymbol{S}_{c}\left(  \boldsymbol{X}_{\left(  k\right)  }-\boldsymbol{\bar
+{X}}\right)  , & \text{cor = FALSE,}\\
+\boldsymbol{S}_{c}\boldsymbol{X}_{\left(  k\right)  }^{\ast}, & \text{cor =
+TRUE.}%
+\end{array}
+\right.
+\]
+
+
+If cor = FALSE, then the score matrix is
+\[
+\boldsymbol{F}=%
+\begin{pmatrix}
+\boldsymbol{f}_{\left(  1\right)  }^{\top}\\
+\boldsymbol{f}_{\left(  2\right)  }^{\top}\\
+\vdots\\
+\boldsymbol{f}_{\left(  n\right)  }^{\top}%
+\end{pmatrix}
+=%
+\begin{pmatrix}
+\left(  \boldsymbol{X}_{\left(  1\right)  }-\boldsymbol{\bar{X}}\right)
+^{\top}\boldsymbol{S}_{c}^{\top}\\
+\left(  \boldsymbol{X}_{\left(  2\right)  }-\boldsymbol{\bar{X}}\right)
+^{\top}\boldsymbol{S}_{c}^{\top}\\
+\vdots\\
+\left(  \boldsymbol{X}_{\left(  n\right)  }-\boldsymbol{\bar{X}}\right)
+^{\top}\boldsymbol{S}_{c}^{\top}%
+\end{pmatrix}
+=%
+\begin{pmatrix}
+\left(  \boldsymbol{X}_{\left(  1\right)  }-\boldsymbol{\bar{X}}\right)
+^{\top}\\
+\left(  \boldsymbol{X}_{\left(  2\right)  }-\boldsymbol{\bar{X}}\right)
+^{\top}\\
+\vdots\\
+\left(  \boldsymbol{X}_{\left(  n\right)  }-\boldsymbol{\bar{X}}\right)
+^{\top}%
+\end{pmatrix}
+\boldsymbol{S}_{c}^{\top}=\left(  \boldsymbol{X}-\boldsymbol{1}\bar
+{\boldsymbol{X}}^{\top}\right)  \boldsymbol{S}_{c}^{\top}.
+\]
+If cor = TRUE, then the score matrix is
+\[
+\boldsymbol{F}=%
+\begin{pmatrix}
+\boldsymbol{f}_{\left(  1\right)  }^{\top}\\
+\boldsymbol{f}_{\left(  2\right)  }^{\top}\\
+\vdots\\
+\boldsymbol{f}_{\left(  n\right)  }^{\top}%
+\end{pmatrix}
+=%
+\begin{pmatrix}
+\boldsymbol{X}_{\left(  1\right)  }^{\ast\top}\boldsymbol{S}_{c}^{\top}\\
+\boldsymbol{X}_{\left(  2\right)  }^{\ast\top}\boldsymbol{S}_{c}^{\top}\\
+\vdots\\
+\boldsymbol{X}_{\left(  n\right)  }^{\ast\top}\boldsymbol{S}_{c}^{\top}%
+\end{pmatrix}
+=%
+\begin{pmatrix}
+\boldsymbol{X}_{\left(  1\right)  }^{\ast\top}\\
+\boldsymbol{X}_{\left(  2\right)  }^{\ast\top}\\
+\vdots\\
+\boldsymbol{X}_{\left(  n\right)  }^{\ast\top}%
+\end{pmatrix}
+\boldsymbol{S}_{c}^{\top}=\boldsymbol{X}^{\ast}\boldsymbol{S}_{c}^{\top},
+\]
+where $\boldsymbol{X}^{\ast}=\left(  \boldsymbol{X}-\boldsymbol{1}%
+\bar{\boldsymbol{X}}^{\top}\right)  \boldsymbol{D}^{-\frac{1}{2}}$. If we
+define
+\[
+\text{scaledX}=\left\{
+\begin{array}
+[c]{ll}%
+\boldsymbol{X}-\boldsymbol{1}\bar{\boldsymbol{X}}^{\top}, & \text{cor =
+FALSE,}\\
+\boldsymbol{X}^{\ast}, & \text{cor = TRUE,}%
+\end{array}
+\right.
+\]
+then
+\begin{equation}
+\boldsymbol{F}=\text{scaledX}\cdot\boldsymbol{S}_{c}^{\top}.
+\label{F=scaledX*Sc}%
+\end{equation}
+
+
+\begin{theorem}
+\label{Theorem: R, scaledX}The running matrices ($\boldsymbol{R}$),
+eigenvalues ($\lambda$), loadings ($\boldsymbol{L}$), uniquenesses
+($\boldsymbol{\Psi}$), scoring coefficients ($\boldsymbol{S}_{c}$), scaled
+data matrices\ (scaledX), score matrices ($\boldsymbol{F}$) are the same for
+
+(a) combinations (2) and (4),
+
+(b) combinations (6) and (8).
+\end{theorem}
+
+\noindent\textbf{Proof.} If the running matrices ($\boldsymbol{R}$) are the
+same, then the eigenvalues ($\lambda$), loadings ($\boldsymbol{L}$),
+uniquenesses ($\boldsymbol{\Psi}$) are the same. If $\boldsymbol{R}%
+,\boldsymbol{L},\boldsymbol{\Psi}$ are the same, then by the definition of
+scoring coefficient $\boldsymbol{S}_{c}$, we know that $\boldsymbol{S}_{c}$
+are the same. If the scaled data matrices\ (scaledX) are the same, then by
+(\ref{F=scaledX*Sc}), the score matrices ($\boldsymbol{F}$) are the same. Thus
+it suffices to show that $\boldsymbol{R}$ and scaledX are the same.
+
+(a) The running matrices $\boldsymbol{R}^{c}=\boldsymbol{\tilde{R}}^{c}$ by
+Theorem \ref{Theorem: R equal}. From Table \ref{Table:4-8}, we see that
+\[
+\boldsymbol{Y}_{\left(  k\right)  }^{\ast c}=\boldsymbol{Y}_{\left(  k\right)
+}=\boldsymbol{X}_{\left(  k\right)  }^{\ast c},
+\]
+thus the scaledX are the same.
+
+(b) The running matrices $\boldsymbol{R}^{r}=\boldsymbol{\tilde{R}}^{r}$ by
+Theorem \ref{Theorem: R equal}. By (\ref{Xk_Yk}), we have $\boldsymbol{X}%
+_{\left(  k\right)  }^{\ast r}=\boldsymbol{Y}_{\left(  k\right)  }^{\ast r}$,
+thus the scaledX are the same.\hfill$\square$
+
+\subsection{Example: hbk data}
+
+In this subsection, a data set \code{hbk} is used to show the base
+functionalities of the robust factor analysis solution. The Hawkins, Bradu and
+Kass data set \code{hbk} is from the package \pkg{robustbase} consists of
+75 observations in 4 dimensions (one response and three explanatory
+variables). The first 10 observations are bad leverage points, and the next
+four points are good leverage points (i.e., their \textbf{x} are outlying, but
+the corresponding \code{y} fit the model quite well). We will consider only
+the X-part of the data.
+
+Robust factor analysis is represented by the class \code{FaCov} which inherits
+from class \code{Fa} by class \code{FaRobust} of distance 2,\ and uses all
+slots and methods defined from \code{Fa}. The function \code{FaCov()} serves
+as a constructor (generating function) of the class. It can be called either
+by providing a data frame or matrix or a formula with no response variable,
+referring only to numeric variables. The usage of the default method of
+\code{FaCov} is:
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=set-prompt, echo=FALSE, results=hide>>=
+##
+## set the prompt to "R> " and the continuation to "+ "
+##
+options(prompt = "R> ", continue = "+  ", width = 70, useFancyQuotes = FALSE)
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=library-hbk-stock611, echo=FALSE, results=hide>>=
+##
+## Load the 'robustfa' package and two data sets
+##
+library("robustfa")
+data("hbk")
+hbk.x = hbk[,1:3] # take only the X part
+rownames(hbk.x) = 1:75
+
+data("stock611")
+stock611$name = 1:611; stock611
+stock608 = stock611[-c(92,2,337),]
+stock604 = stock611[-c(92,2,337,338,379,539,79),]
+R611 = cor(stock611[,3:12]); R611
+@
+
+
+\begin{verbatim}
+FaCov(x, factors = 2, cor = FALSE, cov.control = CovControlMcd(),
+method = c("mle", "pca", "pfa"),
+scoresMethod = c("none", "regression", "Bartlett"), ...)
+\end{verbatim}
+
+\noindent where \code{x} is a numeric matrix or an object that can be coerced
+to a numeric matrix. \code{factors} is the number of factors to be fitted.
+\code{cor} is a logical value indicating whether the calculation should use
+the correlation matrix (\code{cor = TRUE}) or the covariance matrix
+(\code{cor = FALSE}). \code{cov.control} specifies which covariance estimator
+to use by providing a \code{CovControl-class} object. The default is
+\code{CovControlMcd-class} which will indirectly call \code{CovMcd}. If
+\code{cov.control = NULL} is specified, the classical estimates will be used
+by calling \code{CovClassic}. \code{method} is the method of factor analysis,
+one of \code{"mle"} (the default), \code{"pca"}, and \code{"pfa"}.
+\code{scoresMethod} specifies which type of scores to produce. The default is
+\code{"none"}, \code{"regression"} gives Thompson's scores, and
+\code{"Bartlett"} gives Bartlett's weighted least-squares scores
+\citep{Johnson-Wichern:07, Xue-Chen:07}. The usage of the formula interface of
+\code{FaCov} is:
+\begin{verbatim}
+FaCov(formula, data = NULL, factors = 2, cor = FALSE,
+method = "mle", scoresMethod = "none", ...)
+\end{verbatim}
+
+\noindent where \code{formula} is a formula with no response variable,
+referring only to numeric variables. \code{data} is an optional data frame
+containing the variables in the \code{formula}. Classical factor analysis is
+represented by the class \code{FaClassic} which inherits directly from
+\code{Fa},\ and uses all slots and methods defined there. The function
+\code{FaClassic()} serves as a constructor (generating function) of the class.
+It also has its default method and formula interface as \code{FaCov()}.
+
+The code lines
+%% Input (echo) TRUE, Output (results) FALSE
+<<label=FaCov.default, results=hide>>=
+##
+## faCovPcaRegMcd is obtained from FaCov.default
+##
+faCovPcaRegMcd = FaCov(x = hbk.x, factors = 2, method = "pca",
+scoresMethod = "regression", cov.control = CovControlMcd());
+faCovPcaRegMcd
+@
+
+\noindent generate an object \code{faCovPcaRegMcd} of class \code{FaCov}. In
+fact, it is equivalent to use the formula interface
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=show-print-summary_Fa, echo=FALSE, results=hide>>=
+faCovPcaRegMcd
+summary(faCovPcaRegMcd)
+@
+
+%% Input (echo) TRUE, Output (results) FALSE
+<<label=FaCov.formula, results=hide>>=
+faCovForPcaRegMcd = FaCov(~., data = as.data.frame(hbk.x),
+factors = 2, method = "pca", scoresMethod = "regression",
+cov.control = CovControlMcd())
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=show-print-summary_Fa, echo=FALSE, results=hide>>=
+faCovForPcaRegMcd
+summary(faCovForPcaRegMcd)
+@
+
+\noindent That is \code{faCovForPcaRegMcd = faCovPcaRegMcd}. Type
+%% Input (echo) TRUE, Output (results) TRUE
+<<label=show-print-summary_Fa>>=
+class(faCovPcaRegMcd)
+@
+
+\noindent We see that the class \code{FaCov} is defined in the package
+\pkg{robustfa}. For an object \code{obj} of class \code{Fa}, we have
+\begin{verbatim}
+obj = show(obj) = print(obj) = myFaPrint(obj).
+\end{verbatim}
+
+\noindent Here \code{show()} and \code{print()} are \proglang{S4} generic functions,
+while \code{myFaPrint()} is an \proglang{S3} function acting as a function definition for
+\code{setMethod} of the generic functions \code{show} and \code{print}.
+%% Input (echo) TRUE, Output (results) TRUE
+<<label=show-print-summary_Fa>>=
+show(faCovPcaRegMcd)
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=show-print-summary_Fa, echo=FALSE, results=hide>>=
+faCovPcaRegMcd
+print(faCovPcaRegMcd)
+myFaPrint(faCovPcaRegMcd)
+@
+
+
+From Figure~\ref{fig:FaModel} we see that \code{summary()} generates an object
+of class \code{SummaryFa} which has its own \code{show()} method.
+%% Input (echo) TRUE, Output (results) TRUE
+<<label=show-print-summary_Fa>>=
+summaryFaCovPcaRegMcd = summary(faCovPcaRegMcd);
+summaryFaCovPcaRegMcd
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=show-print-summary_Fa, echo=FALSE, results=hide>>=
+show(summaryFaCovPcaRegMcd)
+class(summaryFaCovPcaRegMcd)
+@
+
+\noindent From the \code{summary} result of \code{faCovPcaRegMcd}, we see that
+the first two factors accout for about 72.0\% of its total variance.
+
+Next we calculate prediction/scores using \code{predict()}. The usage is
+\code{predict(object, ...)}, where \code{object}\ is an object of class
+\code{Fa}. If missing \code{...}(\code{newdata}), the \code{scores} slot of
+\code{object} is used. To save space, only the first five and last five rows
+of the scores are displayed.
+%% Input (echo) TRUE, Output (results) FALSE
+<<label=predict_Fa, results=hide>>=
+predict(faCovPcaRegMcd)
+@
+
+%% Input (echo) FALSE, Output (results) TRUE
+<<label=predict_Fa, echo=FALSE>>=
+predict(faCovPcaRegMcd)[c(1:5, 71:75),]
+@
+
+
+\noindent If not missing \code{...}, then \code{...} must have the name
+\code{newdata}. Moreover, \code{newdata} should be scaled first. For example,
+the original data is \code{x = hbk.x}, and \code{newdata} is a one row \code{data.frame}.
+%% Input (echo) TRUE, Output (results) FALSE
+<<label=predict_Fa, results=hide>>=
+newdata = hbk.x[1, ]
+cor = FALSE # the default
+newdata = { if (cor == TRUE)
+                # standardized transformation
+                scale(newdata, center = faCovPcaRegMcd@center,
+                scale = sqrt(diag(faCovPcaRegMcd@covariance)))
+            else # cor == FALSE
+                # centralized transformation
+                scale(newdata, center = faCovPcaRegMcd@center, scale = FALSE)
+          }
+@
+
+\noindent Finally we get
+%% Input (echo) TRUE, Output (results) TRUE
+<<label=predict_Fa>>=
+prediction = predict(faCovPcaRegMcd, newdata = newdata)
+prediction
+@
+
+\noindent One can easily check that
+\begin{verbatim}
+prediction = predict(faCovPcaRegMcd)[1,] = faCovPcaRegMcd@scores[1,]
+\end{verbatim}
+
+To visualize the factor analysis results, the \code{plot} method can be used.
+We have \code{setMethod} \code{plot} with signature
+\begin{verbatim}
+x = "Fa", y = "missing".
+\end{verbatim}
+
+\noindent The usage is
+\begin{verbatim}
+plot(x, which = c("factorScore", "screeplot"), choices = 1:2).
+\end{verbatim}
+
+\noindent Where \code{x} is an object of class \code{Fa}.\ The argument
+\code{which} indicates what kind of plot. If \code{which = "factorScore"},
+then a scatterplot of the factor scores is produced; if
+\code{which = "screeplot"}, then the eigenvalues plot is created and is
+helpful to select the number of factors. The argument \code{choices} is an
+integer vector of length two indicating which columns of the factor scores to
+plot. To see how \code{plot} is functioning, we first generate an \code{Fa} object.
+%% Input (echo) TRUE, Output (results) TRUE
+<<label=plot-Fa-FaClassic-FaCov>>=
+faClassicPcaReg = FaClassic(x = hbk.x, factors = 2, method = "pca",
+scoresMethod = "regression"); faClassicPcaReg
+summary(faClassicPcaReg)
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=plot-Fa-FaClassic-FaCov, echo=FALSE, results=hide>>=
+##
+## FaCov
+##
+faCovPcaRegMcd = FaCov(x = hbk.x, factors = 2, method = "pca",
+scoresMethod = "regression", cov.control = CovControlMcd()); faCovPcaRegMcd
+summary(faCovPcaRegMcd)
+@
+
+\noindent\code{faClassicPcaReg} is an object of class \code{FaClassic}. From
+the \code{summary} result of \code{faClassicPcaReg}, we see that the first two
+factors accout for about 99.6\% of its total variance. Next we generate an
+object \code{faCovPcaRegMcd} of class \code{FaCov} using the same data set.
+The \code{show} and \code{summary} results have already been shown before.
+
+The following code lines generate classical and robust scatterplots of the
+first two factor scores. See Figure~\ref{fig:hbk_factorScore}.
+%% Input (echo) TRUE, Output (results) FALSE
+<<label=hbk_factorScore, echo=TRUE, results=hide, fig=TRUE, include=FALSE>>=
+usr <- par(mfrow=c(1,2))
+plot(faClassicPcaReg, which = "factorScore", choices = 1:2)
+plot(faCovPcaRegMcd, which = "factorScore", choices = 1:2)
+par(usr)
+@
+
+\begin{figure}[!htbp]
+\centerline{
+\includegraphics[width=3in]{robustfa-hbk_factorScore.pdf}}\caption{Classical and robust
+scatterplots of the first two factor scores of the hbk data.}%
+\label{fig:hbk_factorScore}%
+\end{figure}
+
+\noindent The following code lines generate classical and robust scree plots.
+See Figure~\ref{fig:hbk_screeplot}.
+%% Input (echo) TRUE, Output (results) FALSE
+<<label=hbk_screeplot, echo=TRUE, results=hide, fig=TRUE, include=FALSE>>=
+usr <- par(mfrow=c(1,2))
+plot(faClassicPcaReg, which = "screeplot")
+plot(faCovPcaRegMcd, which = "screeplot")
+par(usr)
+@
+
+\begin{figure}[!htbp]
+\centerline{
+\includegraphics[width=3in]{robustfa-hbk_screeplot.pdf}}\caption{Classical and robust
+scree plots of the hbk data.}%
+\label{fig:hbk_screeplot}%
+\end{figure}
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=hbk_vs_classical_robust, echo=FALSE, results=hide, fig=TRUE, include=FALSE>>=
+##
+## Plot of the first two factors of hbk and
+## 97.5% tolerance ellipse plot: classical and robust.
+##
+cfaClassicPcaReg <- list(center = c(0,0), cov = diag(faClassicPcaReg@eigenvalues[1:2]), n.obs = faClassicPcaReg@n.obs)
+cfaCovPcaRegMcd <- list(center = c(0,0), cov = diag(faCovPcaRegMcd@eigenvalues[1:2]), n.obs = faCovPcaRegMcd@n.obs)
+
+usr <- par(mfrow=c(1,2))
+rrcov:::.myellipse(faClassicPcaReg@scores, xcov = cfaClassicPcaReg,
+main = "Classical, method = \"pca\"", xlab = "Factor1", ylab = "Factor2", id.n = 0,
+xlim = c(-40,40), ylim = c(-5,15))
+abline(v = 0)
+abline(h = 0)
+text(5,0,labels = "1-13", cex = 0.8)
+text(0.5,6,labels = "14", cex = 0.8)
+rrcov:::.myellipse(faCovPcaRegMcd@scores, xcov = cfaCovPcaRegMcd,
+main = "Robust (MCD), method = \"pca\"", xlab = "Factor1", ylab = "Factor2", id.n = 4,
+xlim = c(-40,40), ylim = c(-5,15))
+text(22,9.5,labels = "1-10", cex = 0.8)
+abline(v = 0)
+abline(h = 0)
+par(usr)
+
+## xlim = c(-40,40), ylim = c(-5,15) # the first ellipse is large
+## xlim = c(-2,32), ylim = c(-2,14)
+apply(rbind(faClassicPcaReg@scores, faCovPcaRegMcd@scores), 2, range)
+@
+
+\begin{figure}[!htbp]
+\centerline{
+\includegraphics[width=3in]{robustfa-hbk_vs_classical_robust.pdf}}\caption{Classical
+and robust scatterplot of the first two factor scores of the hbk data with a
+97.5\% tolerance ellipse.}%
+\label{fig:hbk_vs_classical_robust}%
+\end{figure}
+
+Next we impose a 97.5\% tolerance ellipse on the scatterplot of the first two
+factor scores of the \code{hbk} data by using a function
+\code{rrcov:::.myellipse}. See Figure~\ref{fig:hbk_vs_classical_robust}. The
+left panel shows the classical 97.5\% tolerance ellipse, which is very large
+and contains the outliers 1-13. The regular points are not well seperated from
+the outliers. The right panel shows the robust 97.5\% tolerance ellipse which
+clearly separates the regular points and outliers. We see that the estimate of
+the center of the regular points is located at the origin (where the mean of
+the scores should be located). The following code lines compute the means of
+the classical and robust scores. We see that the mean of all observations of
+the classical scores equals 0, while the mean of good observations (regular
+points, excluding the outliers) of the robust scores equals 0.
+%% Input (echo) TRUE, Output (results) TRUE
+<<label=plot-Fa-colMeans>>=
+colMeans(faClassicPcaReg@scores)
+colMeans(faCovPcaRegMcd@scores)
+colMeans(faClassicPcaReg@scores[15:75,])
+colMeans(faCovPcaRegMcd@scores[15:75,])
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=plot_Cov-compute, echo=FALSE, results=hide>>=
+rownames(hbk.x) = 1:75; hbk.x
+covMcd = CovRobust(x = hbk.x, control = "mcd"); covMcd
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=hbk_myplotDD, echo=FALSE, results=hide, fig=TRUE, include=FALSE>>=
+result = myplotDD(x = covMcd)
+@
+
+\begin{figure}[!htbp]
+\centerline{
+\includegraphics[width=3in]{robustfa-hbk_myplotDD.pdf}}\caption{A distance-distance
+plot for hbk data.}%
+\label{fig:hbk_myplotDD}%
+\end{figure}
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=plot_Cov, echo=FALSE, results=hide>>=
+##
+## All the following plots are OK for x = covMcd.
+## The plot-methods is defined in the package rrcov.
+##
+## The figures generated in this code chunk is not
+## reported in the paper.
+##
+
+##
+## A distance-distance plot.
+## We see that the robust (mahalanobis) distances are
+## far larger than the (classical) mahalanobis distances.
+## The outliers have large robust distances.
+##
+plot(x = covMcd, which = "dd")
+
+##
+## An index plot of the robust and mahalanobis distances.
+## We also see that the robust distances are far larger than
+## the mahalanobis distances and the outliers have large robust distances.
+##
+plot(x = covMcd, which = "distance", classic = T)
+
+##
+## A Chisquare QQ-plot of the robust and mahalanobis distances.
+## We also see that the robust distances are far larger than
+## the mahalanobis distances and the outliers have large robust distances.
+##
+plot(x = covMcd, which = "qqchi2", classic = T)
+
+##
+## Robust and classical 97.5% tolerance ellipses plot.
+## The robust tolerance ellipse is tighter than the classical one.
+## The robust tolerance ellipse separates the regular points and outliers.
+##
+plot(x = covMcd, which = "tolEllipsePlot", classic = T)
+
+##
+## Eigenvalues comparison plot.
+## The eigenvalues of the robust method are much smaller than
+## those of the classical method, and the largest 2 eigenvalues of
+## the classical method decrease very fast.
+##
+plot(x = covMcd, which = "screeplot", classic = T)
+
+@
+
+Next we plot a \code{Cov-class}. See Figure~\ref{fig:hbk_myplotDD}. The figure
+shows a distance-distance plot. We see that the robust (mahalanobis) distances
+are far larger than the (classical) mahalanobis distances. The outliers have
+large robust distances. The figure is generated by
+\code{myplotDD(x = covMcd)}. \code{myplotDD()} is a revised version of
+\code{.myddplot()} in \code{plot-utils.R} in the package \pkg{rrcov}. In
+\code{myplotDD()}, \code{id.n} and \code{ind} are printed out. Here
+\code{id.n} is the number of observations to identify by a label. By default,
+the number of observations with robust distances larger than \code{cutoff} is
+used. By default \code{cutoff = sqrt(qchisq(0.975, p))}. \code{ind} is the
+index of robust distances whose values are larger than \code{cutoff}.
+%% Input (echo) FALSE, Output (results) TRUE
+<<label=cutoff-id.n-sort.y-ind, echo=FALSE>>=
+cat("cutoff =", result$cutoff, "\n")
+cat("id.n <- length(which(rd>cutoff))\n")
+cat("id.n =", result$id.n, "\n")
+cat("Here y is the robust distance (rd).\n")
+
+Lst = list(x = result$sort.y$x[c(1:5, 71:75)], ix = result$sort.y$ix[c(1:5, 71:75)])
+cat("sort.y = (To save space, only the smallest five and largest five
+elements of sort.y$x and sort.y$ix are shown.)\n"); show(Lst)
+cat("ind =\n"); show(result$ind)
+@
+
+\noindent From the above results we see that the \code{cutoff} is computed as
+3.057516. There are \code{id.n = 14} observations with robust distance larger
+than \code{cutoff}. \code{sort.y} is a list containing the sorted values of
+\code{y} (the robust distance). \code{sort.y$x} is arranged in increasing
+order. To save space, only the smallest five and largest five robust distances
+with their indices are shown. \code{sort.y$ix} contains the indices.
+\code{ind} shows the indices of the largest \code{id.n = 14} observations
+whose robust distances are larger than \code{cutoff}.
+
+The accessor functions \code{getCenter()}, \code{getEigenvalues()},
+\code{getLoadings()}, \code{getQuan()}, \code{getScores()}, and
+\code{getSdev()} are used to access the corresponding slots. For instance
+%% Input (echo) TRUE, Output (results) TRUE
+<<label=get_Fa>>=
+getEigenvalues(faCovPcaRegMcd)
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=get_Fa, echo=FALSE, results=hide>>=
+getCenter(faCovPcaRegMcd)
+getFa(faCovPcaRegMcd)
+getLoadings(faCovPcaRegMcd)
+getQuan(faCovPcaRegMcd)
+getScores(faCovPcaRegMcd)
+getSdev(faCovPcaRegMcd)
+@
+
+The function \code{getFa()}, which is used in \code{predict()} and
+\code{screeplot()}, returns a list of class \code{"fa"}.
+
+Note that our previous comparisons in this subsection are just (1) vs (5),
+i.e., classical and robust factor analysis comparisons using \code{x = hbk.x}
+as the data input and the covariance matrix (\code{cor = FALSE}) as the
+running matrix.
+
+For \code{x = hbk.x}, we checked that $\boldsymbol{S}^{r}\neq
+\boldsymbol{\tilde{S}}^{r}$, and $\boldsymbol{R}^{r}=\boldsymbol{\tilde{R}%
+}^{r}$ for \code{control = "mcd"}, \code{"ogk"}, \code{"m"}, \code{"mve"},
+\code{"sfast"}, \code{"bisquare"}, \code{"rocke"}, small differences between
+$\boldsymbol{R}^{r}$ and $\boldsymbol{\tilde{R}}^{r}$ for
+\code{control = "sde"}, \code{"surreal"}. The results illustrate Theorem
+\ref{Theorem: R equal}.
+
+The eigenvalues of the running matrices of the \code{hbk} data of the 8
+combinations are given in Table \ref{Table:eigenvalues_hbk}. From Table
+\ref{Table:eigenvalues_hbk} we see that the eigenvalues of (2), (3), and (4)
+are the same, the eigenvalues of (6) and (8) are the same. The results
+illustrate Theorems \ref{Theorem: R equal} and \ref{Theorem: R, scaledX}.
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=hbk-cov-cor, echo=FALSE, results=hide>>=
+##
+## robust factor analysis
+## covariance vs correlation
+## x vs scale(x)
+##
+## control = "auto", "mcd", "ogk", "m", "mve", "sde",
+## "sfast", "surreal", "bisquare", "rocke" (these four are S-estimators)
+##
+## test the following:
+## S_r != S_r_tilda? Yes!
+## R_r == R_r_tilda?
+## From the results of x = hbk.x, we guess that R_r == R_r_tilda!
+##
+
+##
+## x = hbk.x
+##
+compute_cov_cor(x = hbk.x, control = "mcd") # Yes!
+compute_cov_cor(x = hbk.x, control = "ogk") # Yes!
+compute_cov_cor(x = hbk.x, control = "m") # Yes!
+compute_cov_cor(x = hbk.x, control = "mve") # Yes!
+compute_cov_cor(x = hbk.x, control = "sde") # small difference
+compute_cov_cor(x = hbk.x, control = "sfast") # Yes!
+compute_cov_cor(x = hbk.x, control = "surreal") # small difference
+compute_cov_cor(x = hbk.x, control = "bisquare") # Yes!
+compute_cov_cor(x = hbk.x, control = "rocke") # Yes!
+
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=hbk-eigenvalues, echo=FALSE, results=hide>>=
+##
+## The running matrices of (2), (3), and (4) are the same!
+## The running matrices of (6) and (8) are the same!
+## Consequently, the eigenvalues, loadings, importance of components are the same!
+##
+
+##
+## x = hbk.x
+##
+
+## classical
+covC = CovClassic(x = hbk.x); covC
+covC@cov # (1)
+eigen(covC@cov)$values
+cov2cor(covC@cov) # (2)
+eigen(cov2cor(covC@cov))$values
+
+## robust
+covMcd = CovRobust(x = hbk.x, control = "mcd"); covMcd
+covMcd@cov # (5)
+eigen(covMcd@cov)$values
+cov2cor(covMcd@cov) # (6)
+eigen(cov2cor(covMcd@cov))$values
+
+##
+## x = scale(hbk.x)
+##
+
+## classical
+covC = CovClassic(x = scale(hbk.x)); covC
+covC@cov # (3)
+eigen(covC@cov)$values
+cov2cor(covC@cov) # (4)
+eigen(cov2cor(covC@cov))$values
+
+## robust
+covMcd = CovRobust(x = scale(hbk.x), control = "mcd"); covMcd
+covMcd@cov # (7)
+eigen(covMcd@cov)$values
+cov2cor(covMcd@cov) # (8)
+eigen(cov2cor(covMcd@cov))$values
+
+@
+
+\begin{table}[!htbp]
+\caption{The eigenvalues of the running matrices for hbk data.}%
+\label{Table:eigenvalues_hbk}
+\begin{center}
+{\small
+\begin{tabular}
+[c]{|l|l|l|l|}\hline
+&  & Classical & Robust (MCD)\\\hline
+hbk.x & covariance & (1) 216.162129 1.981077 0.916329 & (5) 1.935081 1.591967
+1.370366\\\cline{2-4}
+& correlation & (2) 2.92435228 0.05668483 0.01896288 & (6) 1.1890834 0.9563255
+0.8545911\\\hline
+scale(hbk.x) & covariance & (3) 2.92435228 0.05668483 0.01896288 & (7)
+0.12408511 0.02501676 0.01089401\\\cline{2-4}
+& correlation & (4) 2.92435228 0.05668483 0.01896288 & (8) 1.1890834 0.9563255
+0.8545911\\\hline
+\end{tabular}
+}
+\end{center}
+\end{table}
+
+Classical and robust (MCD) scatterplots of the first two factor scores of the
+\code{hbk} data with 97.5\% tolerance ellipses are ploted in Figure
+\ref{fig:8_scores_hbk}. We see that the scores of (2), (3), and (4) are the
+same, the scores of (6) and (8) are the same, in agree with Theorem
+\ref{Theorem: R, scaledX}. Note that the tolerance ellipse is very large for
+(1), since the outliers severely affected the eigenvalues of the running
+matrix $\boldsymbol{S}^{c}$. While the tolerance ellipses are very small for
+(2), (3), and (4), also due to the outliers severely affected the eigenvalues
+of the running matrices $\boldsymbol{R}^{c}=\boldsymbol{\tilde{S}}%
+^{c}=\boldsymbol{\tilde{R}}^{c}$. The tolerance ellipse is very small for (7)
+and it does not cover the regular points, due to the first two eigenvalues of
+(7) are very small. It exemplifies that the results from robust covariance
+matrix of the scaled data is not very reliable. The tolerance ellipses of (6)
+and (8) well seperate the regular points and the outliers.
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=hbk-FaClassic-FaCov-factorScore, echo=FALSE, results=hide>>=
+##
+## classical vs robust
+## x = hbk.x or scale(hbk.x)
+## cor = FALSE or TRUE
+##
+
+## (1) classical, x = hbk.x, cor = FALSE (covariance matrix)
+faClassic1 = FaClassic(x = hbk.x, factors = 2, method = "pca",
+scoresMethod = "regression"); faClassic1
+summary(faClassic1)
+plot(faClassic1, which = "factorScore", choices = 1:2)
+
+## (2) classical, x = hbk.x, cor = TRUE (correlation matrix)
+faClassic2 = FaClassic(x = hbk.x, factors = 2, cor = TRUE, method = "pca",
+scoresMethod = "regression"); faClassic2
+summary(faClassic2)
+plot(faClassic2, which = "factorScore", choices = 1:2)
+
+## (3) classical, x = scale(hbk.x), cor = FALSE (covariance matrix)
+faClassic3 = FaClassic(x = scale(hbk.x), factors = 2, method = "pca",
+scoresMethod = "regression"); faClassic3
+summary(faClassic3)
+plot(faClassic3, which = "factorScore", choices = 1:2)
+
+## (4) classical, x = scale(hbk.x), cor = TRUE (correlation matrix)
+faClassic4 = FaClassic(x = scale(hbk.x), factors = 2, cor = TRUE, method = "pca",
+scoresMethod = "regression"); faClassic4
+summary(faClassic4)
+plot(faClassic4, which = "factorScore", choices = 1:2)
+
+## (5) robust, x = hbk.x, cor = FALSE (covariance matrix)
+faCov5 = FaCov(x = hbk.x, factors = 2, method = "pca",
+scoresMethod = "regression", cov.control = CovControlMcd()); faCov5
+summary(faCov5)
+plot(faCov5, which = "factorScore", choices = 1:2)
+
+## (6) robust, x = hbk.x, cor = TRUE (correlation matrix)
+faCov6 = FaCov(x = hbk.x, factors = 2, cor = TRUE, method = "pca",
+scoresMethod = "regression", cov.control = CovControlMcd()); faCov6
+summary(faCov6)
+plot(faCov6, which = "factorScore", choices = 1:2)
+
+## (7) robust, x = scale(hbk.x), cor = FALSE (covariance matrix)
+faCov7 = FaCov(x = scale(hbk.x), factors = 2, method = "pca",
+scoresMethod = "regression", cov.control = CovControlMcd()); faCov7
+summary(faCov7)
+plot(faCov7, which = "factorScore", choices = 1:2)
+
+## (8) robust, x = scale(hbk.x), cor = TRUE (correlation matrix)
+faCov8 = FaCov(x = scale(hbk.x), factors = 2, cor = TRUE, method = "pca",
+scoresMethod = "regression", cov.control = CovControlMcd()); faCov8
+summary(faCov8)
+plot(faCov8, which = "factorScore", choices = 1:2)
+
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=hbk_vs_1_5, echo=FALSE, results=hide, fig=TRUE, include=FALSE>>=
+##
+## Classical and robust scatterplot of the first two factor scores of the hbk data.
+## The 97.5% tolerance ellipses are superimposed.
+##
+
+## (1) vs (5)
+usr <- par(mfrow = c(1,2))
+cfaClassic <- list(center = c(0,0), cov = diag(faClassic1@eigenvalues[1:2]), n.obs = faClassic1@n.obs)
+rrcov:::.myellipse(faClassic1@scores, xcov = cfaClassic, main = "Classical",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-40,40), ylim = c(-5,28), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+text(5,0,labels = "1-13", cex = 0.8)
+text(0.5,6,labels = "14", cex = 0.8)
+cfaCov <- list(center = c(0,0), cov = diag(faCov5@eigenvalues[1:2]), n.obs = faCov5@n.obs)
+rrcov:::.myellipse(faCov5@scores, xcov = cfaCov, main = "Robust (MCD)",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-40,40), ylim = c(-5,28), id.n = 4)
+text(22,9.5,labels = "1-10", cex = 0.8)
+abline(v = 0)
+abline(h = 0)
+par(usr)
+
+colMeans(faClassic1@scores)
+colMeans(faCov5@scores)
+colMeans(faClassic1@scores[15:75,])
+colMeans(faCov5@scores[15:75,])
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=hbk_vs_2_6, echo=FALSE, results=hide, fig=TRUE, include=FALSE>>=
+## (2) vs (6)
+usr <- par(mfrow = c(1,2))
+cfaClassic <- list(center = c(0,0), cov = diag(faClassic2@eigenvalues[1:2]), n.obs = faClassic2@n.obs)
+rrcov:::.myellipse(faClassic2@scores, xcov = cfaClassic, main = "Classical",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-40,40), ylim = c(-5,28), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+text(4,2,labels = "1-13", cex = 0.8)
+text(5,-1,labels = "14", cex = 0.8)
+cfaCov <- list(center = c(0,0), cov = diag(faCov6@eigenvalues[1:2]), n.obs = faCov6@n.obs)
+rrcov:::.myellipse(faCov6@scores, xcov = cfaCov, main = "Robust (MCD)",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-40,40), ylim = c(-5,28), id.n = 4)
+text(22,8.5,labels = "1-10", cex = 0.8)
+abline(v = 0)
+abline(h = 0)
+par(usr)
+
+colMeans(faClassic2@scores)
+colMeans(faCov6@scores)
+colMeans(faClassic2@scores[15:75,])
+colMeans(faCov6@scores[15:75,])
+
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=hbk_vs_3_7, echo=FALSE, results=hide, fig=TRUE, include=FALSE>>=
+## (3) vs (7)
+usr <- par(mfrow = c(1,2))
+cfaClassic <- list(center = c(0,0), cov = diag(faClassic3@eigenvalues[1:2]), n.obs = faClassic3@n.obs)
+rrcov:::.myellipse(faClassic3@scores, xcov = cfaClassic, main = "Classical",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-40,40), ylim = c(-5,28), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+text(4,2,labels = "1-13", cex = 0.8)
+text(5,-1,labels = "14", cex = 0.8)
+cfaCov <- list(center = c(0,0), cov = diag(faCov7@eigenvalues[1:2]), n.obs = faCov7@n.obs)
+rrcov:::.myellipse(faCov7@scores, xcov = cfaCov, main = "Robust (MCD)",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-40,40), ylim = c(-5,28), id.n = 4)
+text(5,15,labels = "1-10", cex = 0.8)
+abline(v = 0)
+abline(h = 0)
+par(usr)
+
+colMeans(faClassic3@scores)
+colMeans(faCov7@scores)
+colMeans(faClassic3@scores[15:75,])
+colMeans(faCov7@scores[15:75,])
+
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=hbk_vs_4_8, echo=FALSE, results=hide, fig=TRUE, include=FALSE>>=
+## (4) vs (8)
+usr <- par(mfrow = c(1,2))
+cfaClassic <- list(center = c(0,0), cov = diag(faClassic4@eigenvalues[1:2]), n.obs = faClassic4@n.obs)
+rrcov:::.myellipse(faClassic4@scores, xcov = cfaClassic, main = "Classical",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-40,40), ylim = c(-5,28), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+text(4,2,labels = "1-13", cex = 0.8)
+text(5,-1,labels = "14", cex = 0.8)
+cfaCov <- list(center = c(0,0), cov = diag(faCov8@eigenvalues[1:2]), n.obs = faCov8@n.obs)
+rrcov:::.myellipse(faCov8@scores, xcov = cfaCov, main = "Robust (MCD)",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-40,40), ylim = c(-5,28), id.n = 4)
+text(22,8,labels = "1-10", cex = 0.8)
+abline(v = 0)
+abline(h = 0)
+par(usr)
+
+colMeans(faClassic4@scores)
+colMeans(faCov8@scores)
+colMeans(faClassic4@scores[15:75,])
+colMeans(faCov8@scores[15:75,])
+
+## xlim = c(-40,40), ylim = c(-5,28) # the first ellipse is large
+## xlim = c(-2,33), ylim = c(-2,28)
+apply(rbind(faClassic1@scores, faCov5@scores), 2, range)
+apply(rbind(faClassic2@scores, faCov6@scores), 2, range)
+apply(rbind(faClassic3@scores, faCov7@scores), 2, range)
+apply(rbind(faClassic4@scores, faCov8@scores), 2, range)
+
+@
+
+\begin{figure}[!htbp]
+%Requires \usepackage{graphicx}
+\centerline{
+\begin{tabular}{c@{\hspace{1pc}}c}
+\includegraphics[width=2.5in]{robustfa-hbk_vs_1_5.pdf}& \includegraphics[width=2.5in]{robustfa-hbk_vs_3_7.pdf}\\
+\includegraphics[width=2.5in]{robustfa-hbk_vs_2_6.pdf}& \includegraphics[width=2.5in]{robustfa-hbk_vs_4_8.pdf}
+\end{tabular}
+} \caption{Classical and robust (MCD) scatterplots of the first two factor
+scores of the hbk data with 97.5\% tolerance ellipses. First row: (1) vs (5);
+(3) vs (7). Second row: (2) vs (6); (4) vs (8).}%
+\label{fig:8_scores_hbk}%
+\end{figure}
+
+\subsection{Example: Stocks data}
+
+In this subsection, we apply the robust factor analysis solution to a real
+data set \code{stock611}. This data set consists of 611 observations with 12
+variables. The data set is from Chinese stock market in the year 2001. It is
+used in \citep{Wang:09} to illustrate factor analysis methods.
+
+For \code{x = stock611[,3:12]},
+\begin{verbatim}
+cov_x = CovRobust(x = x, control = control)
+\end{verbatim}
+
+\noindent gets error message for
+\code{control = "mcd", "m", "mve", "sde", "sfast"}, thus we can not compute
+\code{cov_x}, $\boldsymbol{S}^{r}$, and $\boldsymbol{R}^{r}$ for these robust
+estimators. That is, we can not get results for combinations (5) and (6) for
+these robust estimators. However, for \code{x = scale(stock611[,3:12])}, we
+can compute \code{cov_x}, $\boldsymbol{\tilde{S}}^{r}$, and
+$\boldsymbol{\tilde{R}}^{r}$ for these robust estimators, and we can get
+results for combinations (7) and (8). Although (6) and (8) have the same
+running matrices ($\boldsymbol{R}$), eigenvalues ($\lambda$), loadings
+($\boldsymbol{L}$), uniquenesses ($\boldsymbol{\Psi}$), scoring coefficients
+($\boldsymbol{S}_{c}$), scaled data matrices\ (scaledX), and score matrices
+($\boldsymbol{F}$), as were proved in Theorem \ref{Theorem: R, scaledX}, we
+may not be able to get results for (6) due to computational error for
+\code{cov_x}, while for (8) the computational error does not occur. That is
+why we recommend (4) vs (8) for classical and robust factor analysis.
+
+The first two eigenvalues of the running matrices of the \code{stock611} data
+of the 8 combinations are given in Table \ref{Table:eigenvalues_stock611}.
+From Table \ref{Table:eigenvalues_stock611} we see that the eigenvalues of
+(2), (3), and (4) are the same, the eigenvalues of (6) and (8) are the same.
+The results also illustrate Theorems \ref{Theorem: R equal} and
+\ref{Theorem: R, scaledX}.
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=stock611-cov-cor, echo=FALSE, results=hide>>=
+##
+## robust factor analysis
+## covariance vs correlation
+## x vs scale(x)
+##
+## control = "auto", "mcd", "ogk", "m", "mve", "sde",
+## "sfast", "surreal", "bisquare", "rocke" (these four are S-estimators)
+##
+## test the following:
+## S_r != S_r_tilda? Yes!
+## R_r == R_r_tilda?
+##
+## x = stock611[,3:12]
+##
+## We can not compute cov_x, S_r, and R_r.
+## However, we can compute cov_scale_x, S_r_tilda, and R_r_tilda.
+##
+## The error message for control = "mcd", "m", "mve", "sde", "sfast" are:
+## Error in solve.default(cov, ...) :
+##   system is computationally singular: reciprocal condition number = 1.34036e-21
+##
+
+## compute_cov_cor(x = stock611[,3:12], control = "mcd") # Error
+compute_cov_cor(x = stock611[,3:12], control = "ogk") # Yes!
+## compute_cov_cor(x = stock611[,3:12], control = "m") # Error
+## compute_cov_cor(x = stock611[,3:12], control = "mve") # Error
+## compute_cov_cor(x = stock611[,3:12], control = "sde") # Error
+## compute_cov_cor(x = stock611[,3:12], control = "sfast") # Error
+## compute_cov_cor(x = stock611[,3:12], control = "surreal") # computation extensive
+compute_cov_cor(x = stock611[,3:12], control = "bisquare") # Yes!
+compute_cov_cor(x = stock611[,3:12], control = "rocke") # Yes!
+
+
+##
+## For x = stock611[,3:12], control = "mcd", "m", "mve", "sde", "sfast" get error messages.
+## Thus we CAN NOT get results for combinations (5) and (6) for these robust estimators.
+##
+## Error in solve.default(cov, ...) :
+##  system is computationally singular: reciprocal condition number = 1.37016e-21
+##
+## cov_x_mcd   = CovRobust(x = stock611[,3:12], control = "mcd");   cov_x_mcd
+## cov_x_m     = CovRobust(x = stock611[,3:12], control = "m");     cov_x_m
+## cov_x_mve   = CovRobust(x = stock611[,3:12], control = "mve");   cov_x_mve
+## cov_x_sde   = CovRobust(x = stock611[,3:12], control = "sde");   cov_x_sde
+## cov_x_sfast = CovRobust(x = stock611[,3:12], control = "sfast"); cov_x_sfast
+
+##
+## For x = scale(stock611[,3:12]), control = "mcd", "m", "mve", "sde", "sfast" are OK.
+## Thus we CAN get results for combinations (7) and (8) for these robust estimators.
+##
+cov_scale_x_mcd   = CovRobust(x = scale(stock611[,3:12]), control = "mcd");   cov_scale_x_mcd
+cov_scale_x_m     = CovRobust(x = scale(stock611[,3:12]), control = "m");     cov_scale_x_m
+cov_scale_x_mve   = CovRobust(x = scale(stock611[,3:12]), control = "mve");   cov_scale_x_mve
+cov_scale_x_sde   = CovRobust(x = scale(stock611[,3:12]), control = "sde");   cov_scale_x_sde
+cov_scale_x_sfast = CovRobust(x = scale(stock611[,3:12]), control = "sfast"); cov_scale_x_sfast
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=stock611-eigenvalues, echo=FALSE, results=hide>>=
+##
+## The running matrices of (2), (3), and (4) are the same!
+## The running matrices of (6) and (8) are the same!
+## Consequently, the eigenvalues, loadings, importance of components are the same!
+##
+
+##
+## x = stock611[,3:12])
+##
+
+## classical
+covC = CovClassic(x = stock611[,3:12]); covC # covC = R611
+eigen(covC@cov)$values
+eigen(cov2cor(covC@cov))$values
+
+## robust
+covOgk = CovRobust(x = stock611[,3:12], control = "ogk"); covOgk
+eigen(covOgk@cov)$values
+eigen(cov2cor(covOgk@cov))$values
+
+##
+## x = scale(stock611[,3:12])
+##
+
+## classical
+covC = CovClassic(x = scale(stock611[,3:12])); covC # covC = R611
+eigen(covC@cov)$values
+eigen(cov2cor(covC@cov))$values
+
+## robust
+covOgk = CovRobust(x = scale(stock611[,3:12]), control = "ogk"); covOgk
+eigen(covOgk@cov)$values
+eigen(cov2cor(covOgk@cov))$values
+
+@
+
+\begin{table}[!htbp]
+\caption{The first two eigenvalues of the running matrices of the stock611
+data.}%
+\label{Table:eigenvalues_stock611}
+\begin{center}
+{\small
+\begin{tabular}
+[c]{|l|l|l|l|}\hline
+&  & Classical & Robust (MCD)\\\hline
+stock611[,3:12]) & covariance & (1) 4.272384e+20 1.985165e+19 & (5)
+3.990230e+17 7.358056e+16\\\cline{2-4}
+& correlation & (2) 5.7900498488 2.3189552681 & (6) 5.15840672
+2.40502329\\\hline
+scale(stock611[,3:12])) & covariance & (3) 5.7900498488 2.3189552681 & (7)
+7.527778e-01 2.967432e-01\\\cline{2-4}
+& correlation & (4) 5.7900498488 2.3189552681 & (8) 5.15840672
+2.40502329\\\hline
+\end{tabular}
+}
+\end{center}
+\end{table}
+
+Classical and robust (OGK) scatterplots of the first two factor scores of the
+\code{stock611} data with 97.5\% tolerance ellipses are ploted in Figure
+\ref{fig:6_scores_stock611}. The scatterplots of the first two factor scores
+of combinations (1) and (5) are not shown, because errors occur in
+\begin{verbatim}
+solve.default(S): system is computationally singular.
+\end{verbatim}
+
+\noindent To get a clearer view of the scatterplots, we zoom in the
+scatterplots. We see that the scores of (2), (3), and (4) are the same, the
+scores of (6) and (8) are the same, in agree with Theorem
+\ref{Theorem: R, scaledX}. Note that the tolerance ellipses for (2), (3), and
+(4) cover the outliers, due to the outliers severely affected the eigenvalues
+of the running matrices $\boldsymbol{R}^{c}=\boldsymbol{\tilde{S}}%
+^{c}=\boldsymbol{\tilde{R}}^{c}$. The tolerance ellipses of (6) and (8) well
+seperated the regular points and the outliers.
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=stock611-FaClassic-FaCov-factorScore, echo=FALSE, results=hide>>=
+##
+## classical vs robust
+## x = stock611[,3:12] or scale(stock611[,3:12])
+## cor = FALSE or TRUE
+##
+
+## (1) classical, x = stock611[,3:12], cor = FALSE (covariance matrix)
+##
+## Error in solve.default(S) :
+##   system is computationally singular: reciprocal condition number = 1.31917e-23
+##
+## faClassic1 = FaClassic(x = stock611[,3:12], factors = 2, method = "pca",
+## scoresMethod = "regression"); faClassic1
+## summary(faClassic1)
+## plot(faClassic1, which = "factorScore", choices = 1:2)
+
+## (2) classical, x = stock611[,3:12], cor = TRUE (correlation matrix)
+faClassic2 = FaClassic(x = stock611[,3:12], factors = 2, cor = TRUE, method = "pca",
+scoresMethod = "regression"); faClassic2
+summary(faClassic2)
+plot(faClassic2, which = "factorScore", choices = 1:2)
+
+## (3) classical, x = scale(stock611[,3:12]), cor = FALSE (covariance matrix)
+faClassic3 = FaClassic(x = scale(stock611[,3:12]), factors = 2, method = "pca",
+scoresMethod = "regression"); faClassic3
+summary(faClassic3)
+plot(faClassic3, which = "factorScore", choices = 1:2)
+
+## (4) classical, x = scale(stock611[,3:12]), cor = TRUE (correlation matrix)
+faClassic4 = FaClassic(x = scale(stock611[,3:12]), factors = 2, cor = TRUE, method = "pca",
+scoresMethod = "regression"); faClassic4
+summary(faClassic4)
+plot(faClassic4, which = "factorScore", choices = 1:2)
+
+## (5) robust, x = stock611[,3:12], cor = FALSE (covariance matrix)
+##
+## Error in solve.default(S) :
+##   system is computationally singular: reciprocal condition number = 1.17808e-21
+##
+## faCov5 = FaCov(x = stock611[,3:12], factors = 2, method = "pca",
+## scoresMethod = "regression", cov.control = CovControlOgk()); faCov5
+## summary(faCov5)
+## plot(faCov5, which = "factorScore", choices = 1:2)
+
+## (6) robust, x = stock611[,3:12], cor = TRUE (correlation matrix)
+faCov6 = FaCov(x = stock611[,3:12], factors = 2, cor = TRUE, method = "pca",
+scoresMethod = "regression", cov.control = CovControlOgk()); faCov6
+summary(faCov6)
+plot(faCov6, which = "factorScore", choices = 1:2)
+
+## (7) robust, x = scale(stock611[,3:12]), cor = FALSE (covariance matrix)
+faCov7 = FaCov(x = scale(stock611[,3:12]), factors = 2, method = "pca",
+scoresMethod = "regression", cov.control = CovControlOgk()); faCov7
+summary(faCov7)
+plot(faCov7, which = "factorScore", choices = 1:2)
+
+## (8) robust, x = scale(stock611[,3:12]), cor = TRUE (correlation matrix)
+faCov8 = FaCov(x = scale(stock611[,3:12]), factors = 2, cor = TRUE, method = "pca",
+scoresMethod = "regression", cov.control = CovControlOgk()); faCov8
+summary(faCov8)
+plot(faCov8, which = "factorScore", choices = 1:2)
+
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=stock611-factorScore-ellipses, echo=FALSE, results=hide>>=
+##
+## Classical and robust scatterplot of the first two factor scores of the stock611 data.
+## The 97.5% tolerance ellipses are superimposed.
+##
+
+## (1) vs (5)
+## not available
+
+## (2) vs (6)
+usr <- par(mfrow = c(1,2))
+cfaClassic <- list(center = c(0,0), cov = diag(faClassic2@eigenvalues[1:2]), n.obs = faClassic2@n.obs)
+rrcov:::.myellipse(faClassic2@scores, xcov = cfaClassic, main = "Classical",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-20,40), ylim = c(-20,900), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+cfaCov <- list(center = c(0,0), cov = diag(faCov6@eigenvalues[1:2]), n.obs = faCov6@n.obs)
+rrcov:::.myellipse(faCov6@scores, xcov = cfaCov, main = "Robust (OGK)",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-20,40), ylim = c(-20,900), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+par(usr)
+
+## all observations
+colMeans(faClassic2@scores)
+colMeans(faCov6@scores)
+
+## good observations
+colMeans(faClassic2@scores[-result$ind, ])
+colMeans(faCov6@scores[-result$ind, ])
+
+## (3) vs (7)
+usr <- par(mfrow = c(1,2))
+cfaClassic <- list(center = c(0,0), cov = diag(faClassic3@eigenvalues[1:2]), n.obs = faClassic3@n.obs)
+rrcov:::.myellipse(faClassic3@scores, xcov = cfaClassic, main = "Classical",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-20,40), ylim = c(-20,900), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+cfaCov <- list(center = c(0,0), cov = diag(faCov7@eigenvalues[1:2]), n.obs = faCov7@n.obs)
+rrcov:::.myellipse(faCov7@scores, xcov = cfaCov, main = "Robust (OGK)",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-20,40), ylim = c(-20,900), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+par(usr)
+
+## all observations
+colMeans(faClassic3@scores)
+colMeans(faCov7@scores)
+
+## good observations
+colMeans(faClassic3@scores[-result$ind, ])
+colMeans(faCov7@scores[-result$ind, ])
+
+## (4) vs (8)
+usr <- par(mfrow = c(1,2))
+cfaClassic <- list(center = c(0,0), cov = diag(faClassic4@eigenvalues[1:2]), n.obs = faClassic4@n.obs)
+rrcov:::.myellipse(faClassic4@scores, xcov = cfaClassic, main = "Classical",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-20,40), ylim = c(-20,900), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+cfaCov <- list(center = c(0,0), cov = diag(faCov8@eigenvalues[1:2]), n.obs = faCov8@n.obs)
+rrcov:::.myellipse(faCov8@scores, xcov = cfaCov, main = "Robust (OGK)",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-20,40), ylim = c(-20,900), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+par(usr)
+
+## all observations
+colMeans(faClassic4@scores)
+colMeans(faCov8@scores)
+
+## good observations
+colMeans(faClassic4@scores[-result$ind, ])
+colMeans(faCov8@scores[-result$ind, ])
+
+## xlim = c(-20,40), ylim = c(-20,900)
+apply(rbind(faClassic2@scores, faCov6@scores), 2, range)
+apply(rbind(faClassic3@scores, faCov7@scores), 2, range)
+apply(rbind(faClassic4@scores, faCov8@scores), 2, range)
+
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=stock611_vs_ZoomIn_2_6, echo=FALSE, results=hide, fig=TRUE, include=FALSE>>=
+##
+## Classical and robust scatterplot of the first two factor scores of the stock611 data.
+## The 97.5% tolerance ellipses are superimposed.
+##
+## ZoomIn
+## xlim = c(-10,10), ylim = c(-10,10)
+##
+
+## (2) vs (6)
+usr <- par(mfrow = c(1,2))
+cfaClassic <- list(center = c(0,0), cov = diag(faClassic2@eigenvalues[1:2]), n.obs = faClassic2@n.obs)
+rrcov:::.myellipse(faClassic2@scores, xcov = cfaClassic, main = "Classical",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-10,10), ylim = c(-10,10), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+cfaCov <- list(center = c(0,0), cov = diag(faCov6@eigenvalues[1:2]), n.obs = faCov6@n.obs)
+rrcov:::.myellipse(faCov6@scores, xcov = cfaCov, main = "Robust (OGK)",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-10,10), ylim = c(-10,10), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+par(usr)
+
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=stock611_vs_ZoomIn_3_7, echo=FALSE, results=hide, fig=TRUE, include=FALSE>>=
+## (3) vs (7)
+usr <- par(mfrow = c(1,2))
+cfaClassic <- list(center = c(0,0), cov = diag(faClassic3@eigenvalues[1:2]), n.obs = faClassic3@n.obs)
+rrcov:::.myellipse(faClassic3@scores, xcov = cfaClassic, main = "Classical",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-10,10), ylim = c(-10,10), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+cfaCov <- list(center = c(0,0), cov = diag(faCov7@eigenvalues[1:2]), n.obs = faCov7@n.obs)
+rrcov:::.myellipse(faCov7@scores, xcov = cfaCov, main = "Robust (OGK)",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-10,10), ylim = c(-10,10), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+par(usr)
+
+@
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=stock611_vs_ZoomIn_4_8, echo=FALSE, results=hide, fig=TRUE, include=FALSE>>=
+## (4) vs (8)
+usr <- par(mfrow = c(1,2))
+cfaClassic <- list(center = c(0,0), cov = diag(faClassic4@eigenvalues[1:2]), n.obs = faClassic4@n.obs)
+rrcov:::.myellipse(faClassic4@scores, xcov = cfaClassic, main = "Classical",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-10,10), ylim = c(-10,10), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+cfaCov <- list(center = c(0,0), cov = diag(faCov8@eigenvalues[1:2]), n.obs = faCov8@n.obs)
+rrcov:::.myellipse(faCov8@scores, xcov = cfaCov, main = "Robust (OGK)",
+xlab = "Factor1", ylab = "Factor2", xlim = c(-10,10), ylim = c(-10,10), id.n = 0)
+abline(v = 0)
+abline(h = 0)
+par(usr)
+
+@
+
+\begin{figure}[!htbp]
+%Requires \usepackage{graphicx}
+\centerline{
+\begin{tabular}{c}
+\includegraphics[width=3in]{robustfa-stock611_vs_ZoomIn_2_6.pdf}\\
+\includegraphics[width=3in]{robustfa-stock611_vs_ZoomIn_3_7.pdf}\\
+\includegraphics[width=3in]{robustfa-stock611_vs_ZoomIn_4_8.pdf}
+\end{tabular}
+} \caption{Classical and robust (OGK) scatterplots of the first two factor
+scores of the stock611 data with 97.5\% tolerance ellipses. First row: (2) vs
+(6). Second row: (3) vs (7). Third row: (4) vs (8).}%
+\label{fig:6_scores_stock611}%
+\end{figure}
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=stock611_myplotDD, echo=FALSE, results=hide, fig=TRUE, include=FALSE>>=
+covOgk= CovRobust(x = scale(stock611[,3:12]), control = "ogk"); covOgk
+result = myplotDD(x = covOgk)
+@
+
+\begin{figure}[!htbp]
+\centerline{
+\includegraphics[width=3in]{robustfa-stock611_myplotDD}}\caption{A distance-distance
+plot for stock611 data.}%
+\label{fig:stock611_myplotDD}%
+\end{figure}
+
+Next we plot a \code{Cov-class} for the \code{stock611} data using the
+function \code{myplotDD()}. See Figure~\ref{fig:stock611_myplotDD}. The figure
+shows a distance-distance plot. We see that the robust (mahalanobis) distances
+are far larger than the (classical) mahalanobis distances. The outliers have
+large robust distances.
+%% Input (echo) FALSE, Output (results) TRUE
+<<label=cutoff-id.n-sort.y-ind, echo=FALSE>>=
+cat("cutoff =", result$cutoff, "\n")
+cat("id.n <- length(which(rd>cutoff))\n")
+cat("id.n =", result$id.n, "\n")
+cat("Here y is the robust distance (rd).\n")
+
+Lst = list(x = result$sort.y$x[c(1:5, 607:611)], ix = result$sort.y$ix[c(1:5, 607:611)])
+cat("sort.y = (To save space, only the smallest five and largest five
+elements of sort.y$x and sort.y$ix are shown.)\n"); show(Lst)
+cat("ind =\n"); show(result$ind)
+@
+
+\noindent From the above results we see that the \code{cutoff} is computed as
+\code{4.525834}. There are \code{id.n = 287} observations with robust
+distances larger than \code{cutoff}. \code{sort.y} is a list containing the
+sorted values of \code{y} (the robust distance). \code{sort.y$x} is arranged
+in increasing order. To save space, only the smallest five and largest five
+robust distances with their indices are shown. \code{sort.y$ix} contains the
+indices. \code{ind} shows the indices of the largest \code{id.n = 287}
+observations whose robust distances are larger than \code{cutoff}.
+
+From the above results, we recommend (4) vs (8) when one needs to compare
+classical and robust factor analysis. The following code lines generate an
+object \code{faClassic4} of class \code{FaClassic}.
+%% Input (echo) TRUE, Output (results) TRUE
+<<label=faClassic4>>=
+## (4) classical, x = scale(stock611[,3:12]), cor = TRUE (correlation matrix)
+faClassic4 = FaClassic(x = scale(stock611[,3:12]), factors = 2, cor = TRUE,
+method = "pca", scoresMethod = "regression"); faClassic4
+summary(faClassic4)
+@
+
+\noindent Since we use the correlation matrix (\code{cor = TRUE}) as the
+running matrix, the entries of the loading matrix are limitted between 0 and
+1, which makes the explanations of the factors easy. From the \code{show}
+result of \code{faClassic4}, we see that its \code{Factor1} explains variables
+\code{x1-x4}, \code{x9}, \code{x10}; its \code{Factor2} explains variables
+\code{x5-x8} (with loadings larger than 0.48). From the \code{summary} result
+of \code{faClassic4}, we see that the first two factors accout for about
+81.1\% of its total variance.
+
+Next we generate an object \code{faCov8} of class \code{FaCov} using the same
+data set.
+%% Input (echo) TRUE, Output (results) TRUE
+<<label=faCov8>>=
+## (8) robust, x = scale(stock611[,3:12]), cor = TRUE (correlation matrix)
+faCov8 = FaCov(x = scale(stock611[,3:12]), factors = 2, cor = TRUE, method = "pca",
+scoresMethod = "regression", cov.control = CovControlOgk()); faCov8
+summary(faCov8)
+@
+
+\noindent From the \code{show} result of \code{faCov8}, we see that its
+\code{Factor1} explains variables \code{x3-x8} (with loadings larger than
+0.43); its \code{Factor2} explains variables \code{x1-x4}, \code{x9},
+\code{x10}. Thus \code{Factor1} (\code{Factor2}) of \code{faClassic4} and
+\code{Factor2} (\code{Factor1}) of \code{faCov8} are similar. In fact, this is
+not the general case. That is, in most of the situations, the explanations of
+the factors of \code{faClassic4} and \code{faCov8} should be the same. From
+the \code{summary} result of \code{faCov8}, we see that the first two factors
+accout for about 75.6\% of its total variance.
+
+The classical and robust scatterplots of the first two factor scores of the
+\code{stock611} data are shown in Figure \ref{fig:stock611_factorScore_4_8}.
+From the figure we see that \code{Factor1} (\code{Factor2}) of
+\code{faClassic4} and \code{Factor2} (\code{Factor1}) of \code{faCov8} are
+similar in patterns.
+
+%% Input (echo) FALSE, Output (results) FALSE
+<<label=stock611_factorScore_4_8, echo=FALSE, results=hide, fig=TRUE, include=FALSE>>=
+## Display scores and ordered scores.
+faClassic4@scores[, 2:1]
+faCov8@scores[, 1:2]
+
+## plot the factor scores
+usr <- par(mfrow=c(1,2))
+plot(faClassic4, which = "factorScore", choices = 2:1)
+plot(faCov8, which = "factorScore", choices = 1:2)
+par(usr)
+
+@
+
+\begin{figure}[!htbp]
+\centerline{
+\includegraphics[width=3in]{robustfa-stock611_factorScore_4_8.pdf}}\caption{Classical
+and robust scatterplots of the first two factor scores of the stock611 data.}%
+\label{fig:stock611_factorScore_4_8}%
+\end{figure}
+
+Furthermore,\ by inspecting the classical and robust ordered scores, we find
+that they are quite different. In the following, \code{orderedFsC[[1]]} and
+\code{orderedFsOgk[[1]]} are decreasing according to their first column;
+\code{orderedFsC[[2]]} and \code{orderedFsOgk[[2]]} are decreasing according
+to their second column.
+%% Input (echo) TRUE, Output (results) FALSE
+<<label=fsOrder-orderedFsC-orderedFsOgk, results=hide>>=
+orderedFsC = fsOrder(faClassic4@scores[,2:1]); orderedFsC
+@
+
+%% Input (echo) TRUE, Output (results) TRUE
+<<label=fsOrder-orderedFsC-orderedFsOgk>>=
+Lst=list(orderedFsC[[1]][1:10,], orderedFsC[[2]][1:10,]); Lst
+@
+
+%% Input (echo) TRUE, Output (results) FALSE
+<<label=fsOrder-orderedFsC-orderedFsOgk, results=hide>>=
+orderedFsOgk = fsOrder(faCov8@scores[,1:2]); orderedFsOgk
+@
+
+%% Input (echo) TRUE, Output (results) TRUE
+<<label=fsOrder-orderedFsC-orderedFsOgk>>=
+Lst=list(orderedFsOgk[[1]][1:10,], orderedFsOgk[[2]][1:10,]); Lst
+@
+
+
+\section{Conclusions}
+
+We presented an object-oriented solution for robust factor analysis
+developed in the \proglang{S4} class system of the programming environment \proglang{R}. In the solution, new \proglang{S4} classes \code{"Fa"}, \code{"FaClassic"},
+\code{"FaRobust"}, \code{"FaCov"}, \code{"SummaryFa"} are created.
+The classical factor analysis function \code{FaClassic()} and the
+robust factor analysis function \code{FaCov()} both can deal with
+maximum likelihood estimation, principal component analysis, and
+principal factor analysis methods. Consider the factor analysis
+methods (classical or robust), the data input (data or the scaled
+data), and the running matrix (covariance or correlation) all
+together, there are 8 combinations. We recommend (4) (classical
+factor analysis using the correlation matrix of the scaled data as
+the running matrix) vs (8) (robust factor analysis using the
+correlation matrix of the scaled data as the running matrix) for
+theoretical and computational reasons. The application of the
+solution to multivariate data analysis is demonstrated on the
+\code{hbk} data and the \code{stock611} data which themselves are
+parts of the package \pkg{robustfa}. A major design goal of the
+object-oriented solution was the openness to extensions by the
+development of new robust factor analysis methods in the package
+\pkg{robustfa} or in other packages depending on
+\pkg{robustfa}.
+
+%% \bibliographystyle{jss}
+%% \bibliographystyle{plainnat}
+\bibliography{mybib}
+
+\end{document}
+
+
