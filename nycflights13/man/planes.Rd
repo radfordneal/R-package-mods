@@ -28,7 +28,7 @@ rather than tail numbers (e.g. \url{http://www.flyerguide.com/Tail_Numbers_(AA)}
 so can't be matched.
 }
 \examples{
-if (require("dplyr")) {
+if (require("dplyr") && require(magrittr)) {
 planes
 
 # Flights that don't have plane metadata

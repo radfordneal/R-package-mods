@@ -18,7 +18,7 @@
 #' \item{engine}{Type of engine}
 #' }
 #' @examples
-#' if (require("dplyr")) {
+#' if (require("dplyr") && require("magrittr")) {
 #' planes
 #'
 #' # Flights that don't have plane metadata

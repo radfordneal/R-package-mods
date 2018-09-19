@@ -25,7 +25,7 @@ airports
 Useful metadata about airports.
 }
 \examples{
-if (require("dplyr")) {
+if (require("dplyr") && require("magrittr")) {
 airports
 
 airports \%>\% mutate(dest = faa) \%>\% semi_join(flights)

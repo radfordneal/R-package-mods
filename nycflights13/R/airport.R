@@ -15,7 +15,7 @@
 #'     U = unknown. N = no dst.}
 #' }
 #' @examples
-#' if (require("dplyr")) {
+#' if (require("dplyr") && require("magrittr")) {
 #' airports
 #'
 #' airports %>% mutate(dest = faa) %>% semi_join(flights)
