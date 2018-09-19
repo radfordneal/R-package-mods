@@ -67,7 +67,7 @@ extract_mocks <- function(new_values, .env) {
   mock_qual_names <- names(new_values)
 
   lapply(
-    setNames(nm = mock_qual_names),
+    setNames(mock_qual_names, mock_qual_names),
     function(qual_name) {
       pkg_name <- gsub(pkg_and_name_rx, "\\1", qual_name)
 

@@ -1,14 +1,17 @@
 Package: testthat
-Version: 0.9.1
+Version: 0.9.1-909
 Title: Testthat code. Tools to make testing fun :)
 Description: A testing package specifically tailored for R
     that's fun, flexible and easy to set up.
+    Modified for pqR by incorporating a bug fix from later version of 
+    testthat that is even more necessary for pqR, by avoiding a 
+    minor feature from R-3.0.0, and changing R Depends.
 Authors@R: as.person(c(
     "Hadley Wickham <hadley@rstudio.com> [aut, cre]",
     "RStudio [cph]"))
 URL: https://github.com/hadley/testthat
 BugReports: https://github.com/hadley/testthat/issues
-Depends: R (>= 3.1.0), methods
+Depends: R (>= 2.15.1), methods
 Imports: digest
 Suggests: devtools
 License: MIT + file LICENSE
@@ -21,10 +24,10 @@ Collate: 'auto-test.r' 'colour-text.r' 'compare.r' 'context.r'
         'reporter-teamcity.r' 'reporter-zzz.r' 'test-files.r'
         'test-package.r' 'test-that.r' 'traceback.r' 'utils.r'
         'watcher.r'
-Packaged: 2014-09-29 19:17:50 UTC; hadley
+Packaged: 2016-09-30 23:39:24 UTC; radford
 Author: Hadley Wickham [aut, cre],
   RStudio [cph]
 Maintainer: Hadley Wickham <hadley@rstudio.com>
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2014-10-01 19:16:27
+Date/Publication: 2014-09-22 23:05:55
