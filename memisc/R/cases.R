@@ -4,14 +4,21 @@ cases <- function(...,check.xor=FALSE){
   if(length(subst)<2) stop("need at least two conditions")
 
   have.arrows <- sapply(subst,length) > 1
-  have.arrows[have.arrows] <- have.arrows[have.arrows] & sapply(sapply(subst[have.arrows],"[[",1),paste)=="<-"
+  have.arrows.left <- have.arrows
+  have.arrows.left[have.arrows] <- 
+    sapply(sapply(subst[have.arrows],"[[",1),as.character) == "<-"
+  have.arrows.right <- have.arrows
+  have.arrows.right[have.arrows] <-
+    sapply(sapply(subst[have.arrows],"[[",1),as.character) == "->"
+  have.arrows <- have.arrows.left | have.arrows.right
 
   parent <- parent.frame()
   if(all(have.arrows)){
     cond.names <- names(subst)
 
-    conditions <- lapply(subst,"[[",3)
-    values <- lapply(subst,"[[",2)
+    conditions <- mapply ("[[", subst, 3-have.arrows.right)
+    values     <- mapply ("[[", subst, 2+have.arrows.right)
+    
     conditions <- do.call(cbind,lapply(conditions,eval,envir=parent))
     if(!is.logical(conditions)) stop("all conditions have to be logical")
     #if(any(is.na(conditions))) stop("NA in logical condition")

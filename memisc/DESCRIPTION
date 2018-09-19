@@ -2,7 +2,7 @@ Package: memisc
 Type: Package
 Title: Tools for Management of Survey Data, Graphics, Programming,
         Statistics, and Simulation
-Version: 0.96-9
+Version: 0.96-9-909
 Date: 2013-12-06
 Author: Martin Elff (with contributions by Christopher N. Lawrence, Dave Atkins, Jason W. Morgan, and Achim Zeileis)
 Maintainer: Martin Elff <martin.elff@uni-konstanz.de>
@@ -16,6 +16,9 @@ Description: One of the aims of this package is to make life easier for
         (almost) publication-ready tables of regression model
         estimates. Also some convenience tools for graphics,
         programming, and simulation are provided.
+        Modified to work with pqR.  The cases.R and recode.R
+        source files were changed to handle the fact that in pqR
+        the -> operator is no longer automatically converted to <-.
 License: GPL-2
 LazyLoad: Yes
 Depends: R (>= 2.9.0), lattice, stats, methods, utils, MASS

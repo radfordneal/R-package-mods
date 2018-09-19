@@ -3,11 +3,14 @@ setMethod("recode","item",function(x,...,otherwise=NA){
   recodings <- match.call(expand.dots=FALSE)$...
   recodings <- recodings[nzchar(sapply(recodings,paste,collapse=""))]
 
-  if(any(sapply(sapply(recodings,"[[",1),paste)!="<-"))
+  ops <- sapply(sapply(recodings,"[[",1),as.character)
+  left.arrows <- ops == "<-"
+  right.arrows <- ops == "->"
+  if (!all (left.arrows | right.arrows))
     stop("invalid recoding request")
   if(!length(recodings)) return(x)
-  newcodes <- lapply(recodings,"[[",2)
-  oldcodes <- lapply(recodings,"[[",3)
+  newcodes <- mapply("[[",recodings,2+right.arrows)
+  oldcodes <- mapply("[[",recodings,3-right.arrows)
   has.range <- paste(lapply(oldcodes,"[[",1)) == "range"
   if(any(has.range)){
     has.min <- paste(lapply(oldcodes[has.range],"[[",2)) == "min"
@@ -119,12 +122,15 @@ setMethod("recode","vector",function(x,...,otherwise=NA){
       recodings["to.factor"] <- NULL
     }
   recodings <- recodings[nzchar(sapply(recodings,paste,collapse=""))]
-  if(any(sapply(sapply(recodings,"[[",1),paste)!="<-"))
-    stop("invalid recoding request")
+
+  ops <- sapply(sapply(recodings,"[[",1),as.character)
+  left.arrows <- ops == "<-"
+  right.arrows <- ops == "->"
+  if (!all (left.arrows | right.arrows))
 
   if(!length(recodings)) return(x)
-  newcodes <- lapply(recodings,"[[",2)
-  oldcodes <- lapply(recodings,"[[",3)
+  newcodes <- mapply("[[",recodings,2+right.arrows)
+  oldcodes <- mapply("[[",recodings,3-right.arrows)
   has.range <- paste(lapply(oldcodes,"[[",1)) == "range"
   if(any(has.range)){
     has.min <- paste(lapply(oldcodes[has.range],"[[",2)) == "min"
@@ -197,13 +203,16 @@ setMethod("recode","factor",function(x,...,otherwise=NA){
       recodings["to.factor"] <- NULL
     }
   recodings <- recodings[nzchar(sapply(recodings,paste,collapse=""))]
-  if(any(sapply(sapply(recodings,"[[",1),paste)!="<-"))
+  ops <- sapply(sapply(recodings,"[[",1),as.character)
+  left.arrows <- ops == "<-"
+  right.arrows <- ops == "->"
+  if (!all (left.arrows | right.arrows))
     stop("invalid recoding request")
 
   if(!length(recodings)) return(x)
-  newcodes <- sapply(recodings,"[[",2)
+  newcodes <- mapply("[[",recodings,2+right.arrows)
+  oldcodes <- mapply("[[",recodings,3-right.arrows)
   newcodes <- as.character(newcodes)
-  oldcodes <- lapply(recodings,"[[",3)
   oldcodes <- lapply(oldcodes,eval,envir=environment())
   oldcodes <- sapply(oldcodes,function(o) x %in% o)
   if(!is.matrix(oldcodes)) oldcodes <- t(oldcodes)
