@@ -2,4 +2,4 @@
 
 pkg=$1
 
-~/pqR/obj/86-gcc8/bin/R CMD build $pkg
+~/pqR/obj/86-gccx/bin/R CMD build $pkg
