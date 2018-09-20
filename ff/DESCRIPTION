@@ -1,5 +1,5 @@
 Package: ff
-Version: 2.2-7
+Version: 2.2-7-909
 Date: 2012-03-29
 Title: memory-efficient storage of large data on disk and fast access
         functions
@@ -60,6 +60,7 @@ Description: The ff package provides data structures that are stored on
         interactively with selections of large datasets and quickly
         modify selection criteria.  Further high-performance
         enhancements can be made available upon request.
+        Modified for pqR to avoid invalid write to attribute.
 License: file LICENSE
 LazyLoad: yes
 ByteCompile: yes

@@ -603,8 +603,7 @@ SEXP r_ff_open(SEXP ff_, SEXP ffmode, SEXP ro, SEXP autoflush)
 
   R_SetExternalPtrAddr(ff_, ff);
 
-  SEXP sro = getAttrib(ff_, install("readonly"));
-  LOGICAL(sro)[0] = LOGICAL(ro)[0];
+  setAttrib (ff_, install("readonly"), ScalarLogical(LOGICAL(ro)[0]));
 
   LOGICAL(ret_)[0] = TRUE;
   UNPROTECT(1);
