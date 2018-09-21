@@ -141,65 +141,9 @@ on the search path under the same name, this is a useful feature.
 \label{sec:memory}
 
 An important (but not the only) reason to use saved object caches is
-to release memory as much as possible.  It is useful to keep track of
-memory usage as an object is stored and retrieved by various
-operations in \R, which we now do with another small, artificial
-example.
-
-Memory usage is largely tracked by looking at the number of
-``\texttt{Vcells}'' currently in use.  This is an element of the
-matrix which forms the output message of the garbage collector:
-@
-<<>>=
-vc <- gc(); vc ; v0 <- vc["Vcells", "used"]
-@ %def
-
-At this point there are \Sexpr{vc[2,1]} \texttt{Vcells} in
-use. Now create a large \R object and manipulate it, keeping track of
-what happens to the \texttt{Vcells} in use, as a difference from this
-base level.  We begin by defining a tiny function to pick out the
-relevant number from the \texttt{gc} output.
-
-@
-<<>>=
-Vcells <- function()
-  c(Vcells = gc()["Vcells", "used"])            ; Vcells()-v0
-bigX <- matrix(rnorm(1000^2), 1000, 1000)       ; Vcells()-v0
-Store(bigX)                                     ; Vcells()-v0
-d <- dim(bigX)                                  ; Vcells()-v0
-bigX[1,1] <- 0                                  ; Vcells()-v0
-Attach()                                        ; Vcells()-v0
-Store(bigX)                                     ; Vcells()-v0
-@ %def
-It is worth looking at this in some detail.
-\begin{itemize}
-\item Creating \texttt{bigX} in the global environment increases
-  memory usage by about $10^6$ cells, as expected.
-\item Storing the object reduces the cells in use to around the base
-  level again.
-\item Finding the dimension of \texttt{bigX} requires it to be loaded
-  into the cache, honoring the promise to do so.  Cell usage increases
-  by about $10^6$ cells again.
-\item Modifying \texttt{bigX}, in this case replacing its first entry
-  by zero, causes a \emph{second copy} of the object to be made in the
-  global environment.  Cell usage increases by a further $10^6$ cells.
-\item Using the \texttt{SOAR} function \texttt{Attach} re-establishes
-  the cache on the search path.  The object \texttt{bigX} at
-  position~2 reverts to being a promise to re-load rather
-  than the object itself, resulting in a \emph{reduction} in memory
-  usage of about $10^6$ cells.
-\item Finally, storing the modified \texttt{bigX} takes it out of
-  memory and places the new version in the cache.  The promise is now
-  to re-load the modified version and the original version is lost.
-\end{itemize}
-We can clear the cache on the disc using:
-@
-<<>>=
-Remove(bigX)                                   ; (Vcells()-v0)
-@ %def
-The effect on memory is insignificant as only the promise object has
-been removed.  The main effect is to remove an \texttt{.RData} file
-from the disc.
+to release memory as much as possible.  The information regarding
+memory is different in pqR than in R Core versions, so this part
+of the vignette has been removed for pqR.
 
 \subsection{Specifying objects for storage or removal}
 \label{sec:specifying}
