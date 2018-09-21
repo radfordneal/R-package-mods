@@ -1,4 +1,4 @@
-#' checks what is the version of package on CRAN
+#' checks what is the version of package on CRAN.  No longer works.
 #' 
 #' Checks what is the version of package on CRAN.
 #' The CRAN page (baseUrlCRAN+packageName) is checked 
@@ -19,13 +19,14 @@
 #' @examples 
 #' library(GenABEL)
 #' packageVersion("GenABEL")
-#' checkPackageVersionOnCRAN("GenABEL")
+#' # checkPackageVersionOnCRAN("GenABEL")  # no longer works
 #' 
 #' @author Yurii Aulchenko
 #'
 checkPackageVersionOnCRAN <- function(packageName,baseUrlCRAN="http://cran.r-project.org/web/packages/", 
 		timeout = 2)
 {
+	return (NULL)
 	# change default timout
 	svtmo <- options("timeout")
 	options("timeout"=timeout)
