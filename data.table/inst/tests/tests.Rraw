@@ -2303,21 +2303,21 @@ test(860, DT[i], DT[data.table(i)])
 
 # test no memory leak, #2191 and #2284
 # These take a few seconds each, and it's important to run these on CRAN to check no leak
-gc(); before = gc()["Vcells","(Mb)"]
+gc(); before = gc()["Current","Megabytes"]
 for (i in 1:2000) { DT = data.table(1:3); rm(DT) }  # in 1.8.2 would leak 3MB
-gc(); after = gc()["Vcells","(Mb)"]
+gc(); after = gc()["Current","Megabytes"]
 test(861, after < before+0.5)   # close to 0.0 difference, but 0.5 for safe margin
 
-gc(); before = gc()["Vcells","(Mb)"]
+gc(); before = gc()["Current","Megabytes"]
 DF = data.frame(x=1:20, y=runif(20))
 for (i in 1:2000) { DT = as.data.table(DF); rm(DT) }
-gc(); after = gc()["Vcells","(Mb)"]
+gc(); after = gc()["Current","Megabytes"]
 test(862, after < before+0.5)
 
-gc(); before = gc()["Vcells","(Mb)"]
+gc(); before = gc()["Current","Megabytes"]
 DT = data.table(x=1:20, y=runif(20))
 for (i in 1:2000) { x <- DT[1:5,]; rm(x) }
-gc(); after = gc()["Vcells","(Mb)"]
+gc(); after = gc()["Current","Megabytes"]
 test(863, after < before+0.5)
 
 # rbindlist should look for the first non-empty data.table - New changes (from Arun). Explanation below:
@@ -3693,17 +3693,17 @@ test(1155.5, dt[J(NA_real_)], dt[is.na(x) & !is.nan(x)])
 # Fix for (usually small) memory leak when grouping, #2648.
 # Deliberate worst case: largest group (100000 rows) followed last by a small group (1 row).
 DT = data.table(A=rep(1:2,c(100000,1)), B=runif(100001))
-before = gc()["Vcells",2]
+gc(); before = gc()["Current","Megabytes"]
 for (i in 1:50) DT[, sum(B), by=A]
-after = gc()["Vcells",2]
+gc(); after = gc()["Current","Megabytes"]
 test(1157, after < before+3)  # +3 = 3MB
 # Before the patch, Vcells grew dramatically from 6MB to 60MB. Now stable at 6MB. Increase 50 to 1000 and it grew to over 1GB for this case.
 
 # Similar for when dogroups writes less rows than allocated, #2648.
 DT = data.table(k = 1:50, g = 1:20, val = rnorm(1e4))
-before = gc()["Vcells",2]
+gc(); before = gc()["Current","Megabytes"]
 for (i in 1:50) DT[ , unlist(.SD), by = 'k']
-after = gc()["Vcells",2]
+gc(); after = gc()["Current","Megabytes"]
 test(1158, after < before+3)  # 177.6MB => 179.2MB. Needs to be +3 now from v1.9.8 with alloccol up from 100 to 1024
 
 # tests for 'setDT' - convert list, DF to DT without copy

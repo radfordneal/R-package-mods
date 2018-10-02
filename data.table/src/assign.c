@@ -7,6 +7,8 @@ static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
 
 static void finalizer(SEXP p)
 {
+  return;  /* This ridiculous kludge is not needed in pqR, which knows how big things really are */
+
   SEXP x;
   R_len_t n, l, tl;
   if(!R_ExternalPtrAddr(p)) error("Internal error: finalizer hasn't received an ExternalPtr");
