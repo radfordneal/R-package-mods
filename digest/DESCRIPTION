@@ -4,7 +4,7 @@ Author: Dirk Eddelbuettel <edd@debian.org> with contributions
  Mario Frasca, Bryan Lewis, Murray Stokely, Hannes Muehleisen,
  Duncan Murdoch, Jim Hester, Wush Wu, Qiang Kou, Thierry Onkelinx, 
  Michel Lang, Viliam Simko, Kurt Hornik and Radford Neal.
-Version: 0.6.18
+Version: 0.6.18-909
 Date: 2018-10-10
 Maintainer: Dirk Eddelbuettel <edd@debian.org>
 Title: Create Compact Hash Digests of R Objects
@@ -15,9 +15,10 @@ Description: Implementation of a function 'digest()' for the creation
  message authentication code. Please note that this package is not meant to
  be deployed for cryptographic purposes for which more comprehensive (and
  widely tested) libraries such as 'OpenSSL' should be used.
+ Modified for pqR by changing "Depends".
 URL: http://dirk.eddelbuettel.com/code/digest.html
 BugReports: https://github.com/eddelbuettel/digest/issues
-Depends: R (>= 3.1.0)
+Depends: R (>= 2.15.1)
 License: GPL (>= 2)
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
