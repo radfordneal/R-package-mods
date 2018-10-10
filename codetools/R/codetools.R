@@ -1021,7 +1021,8 @@ checkPrimopCall <- function(fn, e, isBuiltin, signal = warning0) {
             signal(paste("missing arguments not allowed in calls to",
                          sQuote(fn)))
     }                   
-    if (exists(".GenericArgsEnv") && exists(fn, get(".GenericArgsEnv"))) {
+    if (exists(".GenericArgsEnv") && exists(fn, get(".GenericArgsEnv"))
+         && e[[1]] != "!") { # don't try with !, which is both unary and binary
         def <- get(fn, envir = get(".GenericArgsEnv"))
         checkCall(def, e, signal)
     }
@@ -1048,7 +1049,7 @@ local({
     zeroOrOneArgPrims <- c("invisible")
     for (fn in zeroOrOneArgPrims) assign(fn, 0:1, envir = primopArgCounts)
 
-    oneArgPrims <- c("!", "(", "abs", "sqrt", "cos", "sin", "tan", "acos",
+    oneArgPrims <- c("(", "abs", "sqrt", "cos", "sin", "tan", "acos",
                      "asin", "atan", "Re", "Im", "Mod", "Arg", "Conj",
                      "cosh", "sinh", "tanh", "acosh", "asinh", "atanh",
                      "sign", "length", "repeat", ".Primitive",
@@ -1069,11 +1070,11 @@ local({
                      "symbol.C", "symbol.For")
     for (fn in oneArgPrims) assign(fn, 1, envir = primopArgCounts)
 
-    oneOrTwoArgPrims <- c("+", "-")
+    oneOrTwoArgPrims <- c("+", "-", "!")
     for (fn in oneOrTwoArgPrims) assign(fn, 1:2, envir = primopArgCounts)
 
-    twoArgPrims <- c("*", "/", "%%", "^", "<", "<=", "==", ">", ">=",
-                     "|", "||", ":", "!=", "&", "&&", "%/%", "%*%",
+    twoArgPrims <- c("*", "/", "%%", "^", "<", "<=", "==", ">", ">=", "!!",
+                     "|", "||", ":", "!=", "&", "&&", "%/%", "%*%", "..",
                      "while", "attr", "attributes<-", "class<-",
                      "oldClass<-", "dim<-", "dimnames<-", "environment<-",
                      "length<-", "reg.finalizer")
