@@ -21,7 +21,7 @@ extern "C" {
 
 SEXP p4s_to_wkt(SEXP p4s, SEXP esri) {
 
-    OGRSpatialReference hSRS = NULL;
+    OGRSpatialReference hSRS = (OGRSpatialReference) NULL;
     char *pszSRS_WKT = NULL;
     SEXP ans;
 

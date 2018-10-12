@@ -23,21 +23,9 @@
 extern "C" {
 #endif
 
-#if R_XDR_INTEGER_SIZE == 1
-#define GDAL_INTEGER_TYPE GDT_Byte
-#elif R_XDR_INTEGER_SIZE == 2
-#define GDAL_INTEGER_TYPE GDT_Int16
-#elif R_XDR_INTEGER_SIZE == 4
 #define GDAL_INTEGER_TYPE GDT_Int32
-#endif
-
-#if R_XDR_DOUBLE_SIZE == 4
-#define GDAL_FLOAT_TYPE GDT_Float32
-#define GDAL_COMPLEX_TYPE GDT_CFloat32
-#elif R_XDR_DOUBLE_SIZE == 8
 #define GDAL_FLOAT_TYPE GDT_Float64
 #define GDAL_COMPLEX_TYPE GDT_CFloat64
-#endif
 
 static CPLErr saved_eErrClass = CE_None;
 static int saved_err_no = 0;

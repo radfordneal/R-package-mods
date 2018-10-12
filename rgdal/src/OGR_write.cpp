@@ -180,7 +180,7 @@ SEXP OGR_write(SEXP inp)
     const char *PROJ4 = CHAR(STRING_ELT(GET_SLOT(p4s, install("projargs")), 0));
 
     if (strcmp(PROJ4, "NA")) {
-            OGRSpatialReference hSRS = NULL;
+            OGRSpatialReference hSRS = (OGRSpatialReference) NULL;
             installErrorHandler();
             if (hSRS.importFromProj4(PROJ4) != OGRERR_NONE) {
 #ifdef GDALV2
