@@ -1,0 +1,7 @@
+#!/bin/bash
+
+pkg=$1
+ver=$2
+
+_R_CHECK_FORCE_SUGGESTS_=FALSE \
+  ~/pqR/obj/pqR-2018-10-10-gccx/bin/R CMD check ${pkg}_${ver}.tar.gz

@@ -3,4 +3,4 @@
 pkg=$1
 
 _R_CHECK_FORCE_SUGGESTS_=FALSE \
-  ~/pqR/obj/86-gccx/bin/R CMD check ${pkg}_*-909.tar.gz
+  ~/pqR/obj/pqR-2018-10-10-gccx/bin/R CMD check ${pkg}_*-909.tar.gz
