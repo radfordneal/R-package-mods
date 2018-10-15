@@ -1,0 +1,383 @@
+\documentclass[11pt]{article}
+\usepackage[top=3cm, bottom=3cm, left=2cm, right=2cm]{geometry} % Page margins
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}            % /eqref
+\usepackage[authoryear,round]{natbib}
+\usepackage{booktabs}           % Some macros to improve tables
+\usepackage{url}
+\usepackage[none]{hyphenat}     % No hyphens
+
+%\VignetteIndexEntry{Importing and exporting data in-to and out-of Cheddar}
+%\VignetteKeyword{food web}
+%\VignetteKeyword{body mass}
+%\VignetteKeyword{numerical abundance}
+%\VignetteKeyword{community}
+%\VignetteKeyword{allometry}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\R}{\textsf{R} }
+
+\begin{document}
+
+\sloppy    % Prevent hyphenated words running into margins
+
+\title{Importing and exporting data in to and out of Cheddar
+       (\Sexpr{packageDescription('cheddar', fields='Version')})}
+\author{Lawrence Hudson}
+\date{\Sexpr{packageDescription('cheddar', fields='Date')}}
+\maketitle
+
+\tableofcontents
+
+<<echo=FALSE>>=
+options(warn=2)
+
+library(cheddar)
+
+# Makes copy-paste much less painful
+options(continue=' ')
+options(width=90)
+options(prompt='> ')
+
+options(SweaveHooks = list(fig=function() par(mgp=c(2.5,1,0), 
+                                              mar=c(4,4,2,1),
+                                              oma=c(0,0,1,0),
+                                              cex.main=0.8)))
+@
+
+\SweaveOpts{width=6,height=6}
+\setkeys{Gin}{width=0.5\textwidth}
+
+\section{Introduction}
+Cheddar's \code{LoadCommunity} and \code{SaveCommunity} functions provide 
+a standard data format for community representation. Data are stored in CSV 
+(Comma-Separated Value) files, which are easily edited using standard software 
+and are well supported by \R. You should read the `Community' vignette before 
+reading this one.
+
+Researchers typically use their own bespoke data formats. This means that there 
+are probably as many data formats as there are researchers! It is therefore 
+extremely hard to write a generic 'import my data in to Cheddar' function. 
+Help is at hand! If you have community data that you would like to import in to 
+Cheddar, please contact me (l.hudson@nhm.ac.uk) - I will 
+either provide example data-import R code for you to modify or will write the 
+required R code for you.
+
+\section{Importing a single community from CSV data}
+\label{sec:introduction}
+<<echo=FALSE>>=
+stream12 <- LoadCommunity('Stream12')
+@
+A Cheddar community is represented by three files, each contains data for a 
+different aspect of the community (Table \ref{tab:community_files}).
+\begin{table}[h!]
+  \begin{center}
+    \begin{tabular}{lll}
+      \toprule
+        Aspect          & File                     & Description                                      \\
+      \midrule
+        Whole-community & \code{properties.csv}    & Contains properties applicable to the community  \\
+        Nodes           & \code{nodes.csv}         & Defines species and associated properties        \\
+        Trophic Links   & \code{trophic.links.csv} & Optional file that defines the food web          \\
+      \bottomrule 
+    \end{tabular}
+    \caption{Community files}
+    \label{tab:community_files}
+  \end{center}
+\end{table}
+You can add properties to any aspect of the community simply by adding columns 
+to the relevant CSV file. All properties added to these files are available 
+to Cheddar's plotting and analysis functions. 
+The following sections show how to import a community in to Cheddar using these 
+three files and the \code{LoadCommunity} function. The data are from a 
+fictitious community named `Stream 12'.
+
+\subsection{properties.csv}
+This file must contain one row of data only (Table 
+\ref{tab:example_properties_csv}).
+\begin{table}[h!]
+  \begin{center}
+    \begin{tabular}{llllll}
+      \toprule
+        title     & M.units & N.units     & \\
+      \midrule
+        Stream 12 & kg      & m\verb|^|-2 & \\
+      \bottomrule 
+    \end{tabular} 
+    \caption{Example \code{properties.csv} file} 
+    \label{tab:example_properties_csv} 
+  \end{center}
+\end{table}
+This file must contain the `title' column. The `M.units' and/or `N.units' 
+must be present if the \code{nodes.csv} file contains columns called 
+`M' and/or `N'. The contents of this file can be accessed using the 
+\code{CPS} function, which returns a \code{list}.
+
+\subsection{nodes.csv}
+This file contains one row for every species in the community (Table 
+\ref{tab:example_nodes_csv}).
+\begin{table}[h!]
+  \begin{center}
+    \begin{tabular}{llllllllll}
+      \toprule
+<<results=tex,echo=FALSE>>=
+cat(paste(paste(colnames(NPS(stream12)), collapse=' & '), '\\\\'))
+@
+      \midrule
+<<results=tex,echo=FALSE>>=
+junk <- apply(NPS(stream12), 1, 
+              function(row) cat(paste(paste(replace(row, which(is.na(row)), ''), collapse=' & '), ' \\\\ \n')))
+@
+      \bottomrule 
+    \end{tabular} 
+    \caption{Example \code{nodes.csv} file} 
+    \label{tab:example_nodes_csv} 
+  \end{center}
+\end{table}
+The `node' column is the only mandatory column; all of the others are optional. 
+The column `node' must contain node names. An error is raised if any node 
+names are duplicated. 
+Whitespace is stripped from the beginning and end of node names. 
+If provided, columns called `M' and/or `N' must represent mean body mass and 
+mean numerical abundance respectively. All values in `M' and `N' must be 
+either empty or greater than 0 and less than infinity. If the columns `M' 
+and/or `N' are given then values named `M.units' and/or `N.units' must be 
+provided in the \code{properties.csv} file.
+The contents of this file can be accessed using the \code{NPS} function, 
+which returns a \code{data.frame}.
+
+Many of Cheddar's plot and analysis functions make use of the `category' node 
+property by default, following previously-used metabolic groupings 
+\citep{YodzisAndInnes1992AmNat}. The `category' column of 
+\code{nodes.csv} is optional but, if given, it should contain one of 
+`producer', `invertebrate', `vert.ecto', `vert.endo' or should be empty. 
+The `Detritus' and `Fungi' nodes do not have a metabolic category so have no 
+value for the `category' column. The `functional group' column contains a 
+different way of classifying nodes in the community.
+
+\subsection{trophic.links.csv}
+This file contains a row for every resource-consumer trophic interaction 
+in the community (Table \ref{tab:example_trophic_links_csv}).
+\begin{table}[h!]
+  \begin{center}
+    \begin{tabular}{ll}
+      \toprule
+<<results=tex,echo=FALSE>>=
+cat(paste(paste(colnames(TLPS(stream12)), collapse=' & '), '\\\\'))
+@
+      \midrule
+<<results=tex,echo=FALSE>>=
+junk <- apply(TLPS(stream12), 1, 
+              function(row) cat(paste(paste(row, collapse=' & '), ' \\\\ \n')))
+@
+      \bottomrule 
+    \end{tabular} 
+    \caption{Example \code{trophic.links.csv} file} 
+    \label{tab:example_trophic_links_csv}
+  \end{center}
+\end{table}
+Values in `resource' and `consumer' should contain node names. An error is 
+raised if any names in `resource' or `consumer' are not in the `node' column 
+of the \code{nodes.csv} file. Whitespace is stripped from the beginning and 
+end of all values in `resource' and `consumer'. Other columns are properties of 
+trophic links. An error is raised if any links appear more than once. 
+The contents of this file can be accessed using the \code{TLPS} function, 
+which returns a \code{data.frame}. 
+
+\subsection{Loading the community}
+The above files should be in the same directory, say `\code{c:/Stream12}'.
+<<eval=FALSE>>=
+stream12 <- LoadCommunity('c:/Stream12')
+@
+Examine the community to make sure that the data have been imported correctly.
+<<>>=
+stream12
+NumberOfNodes(stream12)
+NumberOfTrophicLinks(stream12)
+@
+Examine each of the three aspects.
+<<>>=
+# Community properties
+CPS(stream12)
+
+# Node properties
+NPS(stream12)
+
+# Trophic links
+TLPS(stream12)
+@
+\code{SumBiomassByClass} returns the total biomass in each `category' node 
+property.
+<<>>=
+SumBiomassByClass(stream12)
+@
+You can easily get the total biomass in each `functional.group'.
+<<>>=
+SumBiomassByClass(stream12, class='functional.group')
+@
+
+\newpage
+\section{Importing a collection of communities}
+<<echo=FALSE>>=
+grassland <- LoadCollection('Grassland1994')
+@
+Cheddar's \code{LoadCollection} and \code{SaveCollection} functions provide 
+a standard data format for collections of communities. Each community in a 
+collection is stored in its own directory using the CSV format described in 
+Section \ref{sec:introduction}.
+For example, the following fictitious collection `Grassland1994' contains 
+three communities: `Plot 1', `Plot 2' and `Plot 3'.
+
+\begin{verbatim}
+  Grassland1994
+  |
+  | - communities
+      |
+      | - Plot 1
+          |
+          | - nodes.csv
+          | - properties.csv
+          | - trophic.links.csv
+      | - Plot 2
+          |
+          | - nodes.csv
+          | - properties.csv
+          | - trophic.links.csv
+      | - Plot 3
+          |
+          | - nodes.csv
+          | - properties.csv
+          | - trophic.links.csv
+\end{verbatim}
+The \code{LoadCommunity} function loads the collection in to \R.
+<<eval=FALSE>>=
+grassland <- LoadCommunity('c:/Grassland1994')
+@
+<<>>=
+grassland
+length(grassland)
+@
+The `Collections' vignette explains information community collections in 
+detail.
+
+\newpage
+\section{Export}
+The \code{SaveCommunity} and \code{SaveCollection} functions export 
+communities and collections respectively to CSV files. We illustrate how 
+to export Cheddar data to some relevant \R packages and to other software. 
+
+\subsection{igraph}
+Rather than attempt to implement, test and support the myriad complex graph 
+analyses that have been applied to food webs, we point users to the igraph \R 
+package \citep{igraph}, which is a powerful graph-analysis toolkit. The 
+following function exports a Cheddar community to igraph. 
+<<eval=FALSE>>=
+install.packages('igraph')
+library(igraph)
+ToIgraph <- function(community, weight=NULL)
+{
+    if(is.null(TLPS(community)))
+    {
+        stop('The community has no trophic links')
+    }
+    else
+    {
+        tlps <- TLPS(community, link.properties=weight)
+        if(!is.null(weight))
+        {
+            tlps$weight <- tlps[,weight]
+        }
+        return (graph.data.frame(tlps, 
+                                 vertices=NPS(community), 
+                                 directed=TRUE))
+    }
+}
+
+data(TL84)
+# Unweighted network
+TL84.ig <- ToIgraph(TL84)
+
+data(Benguela)
+# Use diet fraction to weight network
+Benguela.ig <- ToIgraph(Benguela, weight='diet.fraction')
+@
+
+\subsection{NetIndices and foodweb (R forge)}
+The \code{PredationMatrix} function can be used to export a Cheddar community 
+to the NetIndices \citep{NetIndices} and foodweb \citep{foodwebLinEtAl} 
+packages, the later available only on R Forge \citep{TheusslAndZeileis2009} at 
+the time of writing. The foodweb package depends upon NetIndices.
+<<eval=FALSE>>=
+install.packages("NetIndices")
+install.packages("foodweb", repos="http://R-Forge.R-project.org")
+
+library(foodweb)    # Loads the dependency NetIndices
+
+data(TL84)
+TL84.ni <- PredationMatrix(TL84, weight='diet.fraction')
+
+# Plot the predation matrix
+foodweb::imageweb(TL84.ni)
+
+data(Benguela)
+# Use diet fraction to weight network
+Benguela.ni <- PredationMatrix(Benguela, weight='diet.fraction')
+
+# Compute flow-based trophic level using both Cheddar and NetIndices. Both 
+# packages should give the same results
+cbind(ni.tl=NetIndices::TrophInd(Benguela.ni)[,'TL'], 
+      cheddar.tl=FlowBasedTrophicLevel(Benguela, weight.by='diet.fraction'))
+@
+
+\subsection{Network 3D}
+The Network 3D Windows software produces interactive 3D visualisations of food 
+webs and other networks \citep{YoonEtAl2004}. The function below exports a 
+Cheddar community to the `.web' and `.txt' files used by the Network 3D 
+software.
+<<eval=FALSE>>=
+library(cheddar)
+
+ExportToNetwork3D <- function(community, dir, fname_root=CP(community, 'title'))
+{
+    links <- cbind(PredatorID=NodeNameIndices(community, TLPS(community)[,'consumer']),
+                   PreyID=NodeNameIndices(community, TLPS(community)[,'resource']))
+    write.table(links, file.path(dir, paste(fname_root, '_links.web', sep='')), 
+                row.names=FALSE, sep=' ')
+
+    species <- cbind(ID=1:NumberOfNodes(community), 
+                     CommonName=NP(community, 'node'))
+                     
+    write.table(links, file.path(dir, paste(fname_root, '_species.txt', sep='')), 
+                row.names=FALSE, sep=' ')
+}
+
+data(TL84)
+ExportToNetwork3D(TL84, 'c:')
+@
+
+\subsection{foodweb (CRAN)}
+A second package named foodweb \citep{foodwebPerdomoEtAl} is available on 
+CRAN. This package also creates 3D graphs of webs.
+<<eval=FALSE>>=
+install.packages("foodweb")
+
+library(foodweb)
+
+data(TL84)
+
+# Write the predation matrix to a csv file in the format required by foodweb.
+write.table(PredationMatrix(TL84), 'TL84.foodweb.csv', row.names=FALSE, 
+            col.names=FALSE, sep=',')
+
+# foodweb::analyse.single() creates a file called 'Results-TL84.foodweb.csv' 
+# to the current directory. This file will contain some basic food-web 
+# statistics and is required by the foodweb::plotweb() function.
+foodweb::analyse.single('TL84.foodweb.csv')
+foodweb::plotweb(cols=1:7, radii=7:1)           # A 3D plot
+@
+
+\bibliographystyle{plainnat}
+\bibliography{cheddar} 
+
+\end{document}
+

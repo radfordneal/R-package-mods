@@ -1,0 +1,1100 @@
+\documentclass[11pt]{article}
+\usepackage[top=2cm, bottom=3cm, left=2cm, right=2cm]{geometry} % Page margins
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}            % /eqref
+\usepackage[authoryear,round]{natbib}
+\usepackage{booktabs}           % Some macros to improve tables
+\usepackage{url}
+\usepackage[none]{hyphenat}     % No hyphens
+
+%\VignetteIndexEntry{Working with Cheddar communities}
+%\VignetteKeyword{food web}
+%\VignetteKeyword{body mass}
+%\VignetteKeyword{numerical abundance}
+%\VignetteKeyword{community}
+%\VignetteKeyword{allometry}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\R}{\textsf{R} }
+
+\begin{document}
+
+\sloppy    % Prevent hyphenated words running into margins
+
+\title{Working with communities
+       (\Sexpr{packageDescription('cheddar', fields='Version')})}
+\author{Lawrence Hudson}
+\date{\Sexpr{packageDescription('cheddar', fields='Date')}}
+\maketitle
+
+\tableofcontents
+
+<<echo=FALSE>>=
+options(warn=2)
+
+library(cheddar)
+
+# Makes copy-paste much less painful
+options(continue=' ')
+options(width=90)
+options(prompt='> ')
+
+options(SweaveHooks = list(fig=function() par(mgp=c(2.5,1,0), 
+                                              mar=c(4,4,2,1),
+                                              oma=c(0,0,1,0),
+                                              cex.main=0.8)))
+@
+
+\SweaveOpts{width=6,height=6}
+\setkeys{Gin}{width=0.5\textwidth}
+
+\section{Introduction}
+The core of the package is a flexible, extendable representation of an 
+ecological community, described in this vignette. Cheddar's system for plotting 
+communities and statistical analysis of communities is covered in the 
+`PlotsAndStats' vignette. The `ImportExport' vignette covers getting community 
+data in to and out of Cheddar. If you are working with collections, for example 
+to see how community structure changes through time, across environmental 
+gradients or resulting from experimental manipulation, read the `Collections' 
+vignette. 
+
+\section{Datasets}
+Cheddar contains several published empirical food-web datasets
+(Table \ref{tab:community_data}).
+\begin{table}[h!]
+  \begin{center}
+    \begin{tabular}{lll}
+      \toprule
+        Community                     & Notes                                     & References                                 \\
+      \midrule
+        \code{Benguela}               & Crude estimate of $M$; trophic links have & \citet{Yodzis1998JAnimEcol}                \\
+                                      & diet fraction                             &                                            \\
+        \code{BroadstoneStream}       & $M$ and $N$; nodes are well resolved      & \citet{WoodwardEtAl2005AER}                \\
+        \code{TL84} and \code{TL86}   & $M$ and $N$; nodes are well resolved      & \citet{CarpenterAndKitchell1996}           \\
+                                      &                                           & \citet{CohenEtAl2003PNAS}                  \\
+                                      &                                           & \citet{JonssonEtAl2005AER}                 \\
+        \code{SkipwithPond}           & No $M$ or $N$; trophic links have         & \citet{Warren1989Oikos}                    \\
+                                      & `link.evidence' and `link.life.stage'     &                                            \\
+                                      & properties                                &                                            \\
+        \code{YthanEstuary}           & $M$ and $N$ for all nodes except          & \citet{HallAndRaffaelli1991JAnimEcol}      \\
+                                      & detritus; nodes are well-resolved at      & \citet{EmmersonAndRaffaelli2004JAnimEcol}  \\
+                                      & high trophic levels but poorly resolved   &                                            \\
+                                      & at low trophic levels                     &                                            \\
+      \bottomrule 
+    \end{tabular} 
+    \caption{Community data in Cheddar. $M$: body mass. $N$: numerical 
+             abundance.}
+    \label{tab:community_data} 
+  \end{center}
+\end{table}
+
+\section{Community representation}
+\label{sec:representation}
+A Cheddar community has three aspects: 
+\begin{itemize}
+  \item \textit{community properties} such as sampling date, lat \& long, 
+        altitude, temperature and pH, 
+  \item \textit{nodes}, which are the names of species together with any 
+        associated properties such as mean body mass, $M$, and mean numerical 
+        abundance, $N$, and taxonomic classification, 
+  \item the \textit{food web}, defined as the names of each resource-consumer 
+         node pair, together with properties such as evidence for the link 
+         (e.g.\, empirically observed or inferred from literature).
+\end{itemize}
+The final aspect is optional - Cheddar communities need not contain trophic 
+links. The \code{LoadCommunity} and \code{SaveCommunity} functions provide a 
+standard data format, with each aspect stored in its own CSV (Comma-Separated 
+Value) file, described further in the `ImportExport' vignette. 
+Cheddar allows user-defined data to be added to any of these three aspects 
+simply by adding the data to the relevant CSV file. Any data so added will be 
+available to Cheddar's plotting and analysis functions. 
+Each aspect is accessed using the functions \code{CPS} (for 
+\textbf{C}ommunity \textbf{P}ropertie\textbf{S}), \code{NPS} (for 
+\textbf{N}ode \textbf{P}ropertie\textbf{S}) and \code{TLPS} (for 
+\textbf{T}rophic \textbf{L}ink \textbf{P}ropertie\textbf{S}) (Table 
+\ref{tab:aspects}). 
+\begin{table}[h!]
+  \begin{center}
+    \begin{tabular}{llll}
+      \toprule
+        Aspect        & Accessor function & PlotFunction      & CSV file                 \\
+      \midrule
+        Properties    & \code{CPS}        & n/a               & \code{properties.csv}    \\
+        Nodes         & \code{NPS}        & \code{PlotNPS}    & \code{nodes.csv}         \\
+        Food web      & \code{TLPS}       & \code{PlotTLPS}   & \code{trophic.links.csv} \\ 
+      \bottomrule 
+    \end{tabular} 
+    \caption{Aspects of a Cheddar community} 
+    \label{tab:aspects}
+  \end{center}
+\end{table}
+Each of the three community aspects are discussed below. 
+The following examples use the \code{TL84} dataset, which is from Tuesday Lake 
+in Michigan, USA, sampled in 1984 \citep{CarpenterAndKitchell1996, 
+CohenEtAl2003PNAS, JonssonEtAl2005AER}. The data contain estimates 
+of body mass, $M$, and numerical abundance, $N$, for each species. 
+<<>>=
+data(TL84)  # Load the dataset
+print(TL84) # A description of the data
+@
+
+\subsection{Community properties}
+\label{sec:community_properties}
+The \code{CommunityPropertyNames} function returns the names of the community 
+properties.
+<<>>=
+CommunityPropertyNames(TL84)
+@
+`title' is the only property that a community is guaranteed to contain. 
+The function \code{CPS} (for \textbf{C}ommunity \textbf{P}ropertie\textbf{S}) 
+returns a \code{list} of values.
+<<>>=
+CPS(TL84)
+@
+This shows the latitude and longitude of the lake and tells us the units 
+for body mass, $M$, and numerical abundance, $N$, are kg and individuals per 
+metre cubed, respectively. Many of the provided communities 
+(Table \ref{tab:community_data}) contain lat, long and habitat. 
+Some communities have more properties. 
+\code{CPS} lets you get a subset of community properties. For example, to 
+see only the lat and long.
+<<>>=
+CPS(TL84, c('lat', 'long'))
+@
+\code{CPS} also accepts the names of functions that compute community 
+properties. Two such functions are \code{NumberOfNodes} and 
+\code{NumberOfTrophicLinks}.
+<<>>=
+NumberOfNodes(TL84)
+NumberOfTrophicLinks(TL84)
+
+# A list containing lat, long, number of nodes and number of trophic links
+CPS(TL84, c('lat', 'long', 'NumberOfNodes', 'NumberOfTrophicLinks'))
+@
+A named vector can be used to rename values. 
+<<>>=
+CPS(TL84, c('lat', 'long', S='NumberOfNodes', L='NumberOfTrophicLinks'))
+@
+Names that are neither properties of the community nor function names result 
+in \code{NA}.
+<<>>=
+# Returns a list containing 'not a property'=NA
+CPS(TL84, c('not a property'))
+@
+The related function \code{CollectionCPS} will be of interest if you are 
+examining collections of communities, described in the `Collections' vignette.
+
+\subsection{Nodes}
+Let's use two more Cheddar functions to get some more information about 
+\code{TL84}'s nodes.
+<<>>=
+NumberOfNodes(TL84)
+NodePropertyNames(TL84)
+@
+The data contains 56 nodes and \code{NodePropertyNames} tells us that 
+\code{TL84} contains a lot of information about each node. We can get a table 
+of these node properties by using the \code{NPS} function. To avoid printing 
+the full table of 56 rows, the examples below use \R's \code{head} and 
+\code{tail} functions to show just the first or last six rows of the 
+\code{data.frame} returned by \code{NPS}.
+<<>>=
+head(NPS(TL84))
+@
+`node' in the only node property that a community is guaranteed to contain. 
+Many of Cheddar's plotting an analysis functions make use of the `category' 
+node property; this property is optional but, if included in a community, it 
+should contain one of `producer', `invertebrate', `vert.ecto', `vert.endo' or 
+should be empty. 
+<<>>=
+# Just body mass
+head(NPS(TL84, 'M'))
+
+# Body mass and numerical abundance.
+head(NPS(TL84, c('M','N')))
+@
+In addition to first-class node properties like $M$ and $N$, you can also use 
+\code{NPS} to assemble computed node properties by passing in the name(s) of 
+function(s) that take a community object as the only parameter and return 
+either a vector of length \code{NumberOfNodes} or a \code{matrix} or 
+\code{data.frame} with \code{NumberOfNodes} rows. Cheddar contains many 
+suitable functions and you can also write your own. For example, it is common 
+to $\log_{10}$-transformation $M$ and $N$, which we can do using the 
+\code{Log10M} and \code{Log10N} functions. 
+<<>>=
+tail(NPS(TL84, c('Log10M', 'Log10N')))
+@
+You can provide a mix of property and function names.
+<<>>=
+tail(NPS(TL84, c('Log10M', 'Log10N', 'category', 'phylum')))
+@
+The \code{Log10MNBiomass} function returns a \code{matrix} of 
+$\log_{10}$-transformed body mass, $M$, numerical abundance, $N$, and 
+biomass, $B$, and is a convenient way to get all three of these properties in 
+to a table.
+<<>>=
+tail(NPS(TL84, c('Log10MNBiomass')))
+@
+
+We can use \code{NPS} to assemble a table showing node degree: the number of 
+trophic links in to and out of that node. Cheddar contains three functions that 
+compute a different aspect of node degree.
+<<>>=
+nps <- NPS(TL84, c('InDegree','OutDegree','Degree'))
+head(nps)
+
+# This is always true for all nodes
+all(nps$Degree == nps$InDegree+nps$OutDegree)
+@
+Some readers will be more familiar with the terms `trophic vulnerability' and 
+`trophic generality'; the functions \code{TrophicVulnerability} and 
+\code{TrophicGenerality} are synonyms for \code{OutDegree} and \code{InDegree} 
+respectively. 
+Cannibalistic links count twice towards \code{Degree} - one link going out and one 
+going in. The cannibalistic fish \textit{Umbra limi} in \code{TL84} has no 
+consumers other than itself so it has an \code{OutDegree} of one.
+<<>>=
+IsCannibal(TL84)['Umbra limi']
+InDegree(TL84)["Umbra limi"]
+OutDegree(TL84)["Umbra limi"]
+Degree(TL84)["Umbra limi"]
+@
+
+We can combine some of these functions to investigate allometric 
+degree distribution \citep{JonssonEtAl2005AER, OttoEtAl2007Nature, 
+DigelEtAl2011Oikos, JacobEtAl2011AER}, which describe how species' numbers of 
+trophic links scale with their log-transformed body masses.
+<<>>=
+tail(NPS(TL84, c('Log10M', 'OutDegree', 'InDegree', 'Degree')))
+@
+
+Some authors have been interested in how trophic level varies with body mass 
+\citep{JacobEtAl2011AER}. 
+Two more functions suitable for use with \code{NPS} are 
+\code{PreyAveragedTrophicLevel} and \code{ChainAveragedTrophicLevel}, which 
+give different measures of each node's trophic level in the food web; these two 
+functions, and others related to trophic level, are discussed further in 
+section \ref{sec:food_web}.
+<<>>=
+tail(NPS(TL84, c('Log10M', 'PreyAveragedTrophicLevel', 
+                 'ChainAveragedTrophicLevel')))
+@
+The column titles for the trophic-level measures are very long. We can use a 
+named vector to get shortened column titles.
+<<>>=
+tail(NPS(TL84, c('Log10M', PATL='PreyAveragedTrophicLevel', 
+                 CATL='ChainAveragedTrophicLevel')))
+@
+\code{NPS} also allows parameters to be passed to functions. This is 
+demonstrated using the \code{TrophicSpecies} function: in order to account for 
+different levels of taxonomic resolution and other biases, researchers often 
+lump biological species together. Species in the food web that have the same 
+resources and consumers are the same `trophic species' 
+\citep{BriandAndCohen1984Nature, PimmEtAl1991Nature, 
+WilliamsAndMartinez2000Nature}. The \code{TrophicSpecies} function computes 
+these IDs.
+<<>>=
+tail(TrophicSpecies(TL84))
+@
+Some analyses (e.g.\ \citealp{JonssonEtAl2005AER}) exclude isolated species 
+when computing trophic species numbers. Isolated species are those nodes 
+that consume no others and have no consumers (Section 
+\ref{sec:node_connectivity}). To compare the effect of including or excluding 
+isolated species we can pass the function to \code{NPS} twice, once setting the 
+`include.isolated' parameter.
+<<>>=
+head(NPS(TL84, list(TS.iso='TrophicSpecies', 
+                    TS.no.iso=list('TrophicSpecies', include.isolated=FALSE))))
+@
+\textit{Asterionella formosa} is an isolated species so has been given a 
+trophic species of \code{NA} in the `TS.no.iso' column. The 
+\code{LumpTrophicSpecies} function lumps nodes together using these IDs 
+(Section \ref{sec:lumping_nodes}).
+The second argument to \code{NPS} can therefore be defined as a list 
+containing either names of first class properties, names of functions that 
+take only a community or lists in which the first element is the name of a 
+function that takes a community and subsequent elements are 
+\textit{named} arguments to that function. Names of the list are column names 
+in the returned \code{data.frame}.
+
+\code{NPS} therefore makes it very easy to assemble tables of properties either 
+for analysis or for presentation in a manuscript. The example below recreates 
+the first ten rows of \cite{JonssonEtAl2005AER}, Appendix 1A (p74--75).
+<<>>=
+head(NPS(TL84, list('category', BM='M', 'NA'='N', 
+                    TS=list('TrophicSpecies', include.isolated=FALSE),
+                    TH=list('TrophicHeight', include.isolated=FALSE))), 
+     10)
+@
+Some values in this table are different to those presented by 
+\cite{JonssonEtAl2005AER} in their Appendix 1A. Firstly, the numerical 
+abundance values for zooplankton are different. Values in their table 
+"\dots should be multiplied by 6 to convert them to concentrations in the 
+epilimnion" \citep{JonssonEtAl2005AER}, and our data incorporate that 
+conversion. Secondly, the values of trophic height presented are slightly 
+different for species at higher trophic levels because of the different methods 
+used to break cycles (see the help for Cheddar's \code{TrophicSpecies} 
+function). It is not clear from the text of \cite{JonssonEtAl2005AER} exactly 
+how they broke cycles. Because Cheddar is open source, users can refer readers 
+to the function and version used to completely specify the algorithm used.
+
+\code{NPS} returns \code{NA} for any names that are neither a first-class 
+property of the community nor the name of a function.
+<<>>=
+head(NPS(TL84, c('Not a property or function')))
+@
+
+\subsection{Food web}
+\label{sec:food_web}
+\code{NumberOfTrophicLinks} returns the number of trophic links that 
+the community contains. 
+<<>>=
+NumberOfTrophicLinks(TL84)
+@
+Cheddar communities need not contain trophic links so this function might 
+return zero. The following sections describe some different ways in which to 
+view and analyse food webs in cheddar.
+
+\subsubsection{Resource-consumer pairs}
+\code{TLPS} (for \textbf{T}rophic \textbf{L}ink \textbf{P}ropertie\textbf{S}) 
+returns a \code{data.frame} of trophic links pairs (or \code{NULL} if the 
+community has no food web). The \code{data.frame} always contains the columns 
+`resource' and `consumer'. 
+<<>>=
+head(TLPS(TL84))
+@
+\code{TLPS} takes a parameter \code{node.properties}, which should be a 
+vector of names suitable for passing to \code{NPS}. You can therefore use 
+functions and names and can pass parameters to functions, just as in the 
+\code{NPS} examples above.
+<<>>=
+head(TLPS(TL84, node.properties='M'))
+head(TLPS(TL84, node.properties=c('M','Biomass')))
+head(TLPS(TL84, node.properties=c('M', B='Biomass')))
+@
+
+\code{TLPS} takes a parameter \code{link.properties}, which should be a 
+vector of names that are either first-class trophic-link properties or are 
+functions. Functions should take a community as the first parameter and a 
+second parameter that is a \code{data.frame} containing the columns 
+`resource' and `consumer'. They should return either a vector of length 
+\code{NumberOfTrophicLinks} or a \text{matrix} or \text{data.frame} with 
+\code{NumberOfTrophicLinks} rows.
+ 
+\subsubsection{Trophic-link properties}
+Food web data in Cheddar communities can be augmented with extra information. 
+The dataset of SkipwithPond \citep{Warren1989Oikos} contains two such 
+properties: `link.evidence' and `link.life.stage'.
+<<>>=
+data(SkipwithPond)
+head(TLPS(SkipwithPond))
+@
+\code{TrophicLinkPropertyNames} returns the names of the trophic-link 
+properties in a community. 
+<<>>=
+TrophicLinkPropertyNames(SkipwithPond)
+@
+\code{TLPS} accepts a `link.properties' parameter. You can use this to 
+get a subset of the first-class link properties. The columns `resource' and 
+`consumer' are always returned.
+<<>>=
+head(TLPS(SkipwithPond, link.properties='link.evidence'))
+@
+\code{TLPS} takes a parameter \code{link.properties}, which should be a 
+vector of names that are either first-class trophic-link properties or are 
+functions. Functions should take a community as the only parameter. 
+They should return either a vector of length \code{NumberOfTrophicLinks} or 
+a \text{matrix} or \text{data.frame} with \code{NumberOfTrophicLinks} rows. 
+This is illustrated by the code fragment below, which uses the 
+\code{Log10RCMRatio} function to get the $\log_{10}$-transformed ratio 
+between body mass of the resource and consumer in each trophic link in 
+\code{TL84}.
+<<>>=
+head(TLPS(TL84, link.properties='Log10RCMRatio'))
+@
+You can combine \code{node.properties} and \code{link.properties}.
+<<>>=
+head(TLPS(TL84, node.properties='Log10M', link.properties='Log10RCMRatio'))
+@
+
+\subsubsection{Predation matrix}
+The \code{PredationMatrix} function returns an \R \code{matrix} object. 
+The matrix returned by the code fragment below is 56 x 56 and so is not shown 
+for brevity.
+<<>>=
+pm <- PredationMatrix(TL84)
+@
+In the example above, all entries in `pm' are either 0 or 1. 
+This summation below computes the number of 1s in the matrix, which is the same 
+as the number of trophic links in the community.
+<<>>=
+sum(pm)
+NumberOfTrophicLinks(TL84)
+@
+Data that contain estimates of link strength can be used to construct a 
+weighted predation matrix, such as the \code{Benguela} dataset, which contains 
+the `diet.fraction' node property \citep{Yodzis1998JAnimEcol}.
+<<>>=
+data(Benguela)
+pm <- PredationMatrix(Benguela, weight='diet.fraction')
+@
+More information about link strengths is in Section \ref{sec:link_strengths}.
+
+\subsubsection{Node connectivity}
+\label{sec:node_connectivity}
+A node in a community can be defined as falling in to one of four categories 
+(Table \ref{tab:node_connectivity}).
+\begin{table}[h!]
+  \begin{center}
+    \begin{tabular}{ll}
+      \toprule
+        Category      & Description                                    \\
+      \midrule
+        Isolated      & No resources or consumers                      \\
+        Basal         & No resources and one or more consumers         \\
+        Top-level     & One or more resources and no consumers         \\
+        Intermediate  & Nodes not fitting any of the above categories  \\
+      \bottomrule 
+    \end{tabular} 
+    \caption{Node connectivity. Cannibalistic links are disregarded.}
+    \label{tab:node_connectivity}
+  \end{center}
+\end{table}
+A node will satisfy only one of the above four definitions. These definitions 
+allow three additional definitions (Table 
+\ref{tab:additional_node_connectivity}).
+\begin{table}[h!]
+  \begin{center}
+    \begin{tabular}{ll}
+      \toprule
+        Category      & Description                          \\
+      \midrule
+        Connected     & Basal, Intermediate or Top-level     \\   
+        Non-basal     & Isolated, Intermediate or Top-level  \\
+        Non-top-level & Isolated, Basal or Intermediate      \\
+      \bottomrule 
+    \end{tabular} 
+    \caption{Additional node connectivity} 
+    \label{tab:additional_node_connectivity}
+  \end{center}
+\end{table}
+For each of the seven definitions (Tables \ref{tab:node_connectivity} and 
+\ref{tab:additional_node_connectivity}), `X', there are three functions: 
+\code{IsXNode}, \code{XNodes} and \code{FractionXNodes}. 
+The first returns a vector of type \code{logical} of length 
+\code{NumberOfNodes}; values are \code{TRUE} for nodes that fit the definition 
+of `X'. The second returns the names of nodes for which \code{IsXNode} returns 
+\code{TRUE}. The third returns the proportion of nodes in the community that 
+fit the definition of `X'. For example, a community's isolated species can 
+be accessed by using \code{IsolatedNodes}.
+<<>>=
+IsolatedNodes(TL84)
+@
+We can use the \code{IsXNode} functions together with \code{NPS} to see 
+a table of connectivity for the whole community.
+<<>>=
+connectivity <- NPS(TL84, c(Basal='IsBasalNode', 
+                            Isolated='IsIsolatedNode', 
+                            Intermediate='IsIntermediateNode', 
+                            TopLevel='IsTopLevelNode'))
+connectivity
+@
+Because nodes can fit only one of the definitions in Table 
+\ref{tab:node_connectivity}, each row in the \code{connectivity} 
+\code{data.frame} should have one, and only one, value of \code{TRUE}. We can 
+verify this by summing each row using \R's \code{apply} function.
+<<>>=
+all(1==apply(connectivity, 1, sum))
+@
+The following summations are also 1.
+<<>>=
+sum(FractionBasalNodes(TL84), 
+    FractionIntermediateNodes(TL84), 
+    FractionTopLevelNodes(TL84), 
+    FractionIsolatedNodes(TL84))
+
+sum(FractionConnectedNodes(TL84), 
+    FractionIsolatedNodes(TL84))
+
+sum(FractionBasalNodes(TL84), 
+    FractionNonBasalNodes(TL84))
+
+sum(FractionTopLevelNodes(TL84), 
+    FractionNonTopLevelNodes(TL84))
+@
+
+\subsubsection{Trophic chains}
+Some network properties and analyses require knowledge of every unique path 
+- `trophic chain' - through the food-web. A trophic chain starts with a basal 
+node (Section \ref{sec:node_connectivity}) and ends when it is not possible to 
+add nodes that are not already in the chain. Loops and cannibalism are 
+therefore ignored when computing trophic chains. For communities that have one 
+or more top-level nodes each trophic chain will end with a top-level node. The 
+`length' of a chain is defined as the number of links that it contains, i.e.\ 
+the number of nodes in the chain minus one. 
+
+Cheddar provides two functions for examining trophic chains. 
+The \code{TrophicChains} function returns a \code{data.frame} of trophic 
+chains.
+<<>>=
+tc <- TrophicChains(TL84)
+dim(tc)
+@
+There are 5988 unique chains in the food web and the longest chains contain 
+8 nodes. Let's look at the first 20 chains.
+<<>>=
+head(tc, 20)
+@
+Every chain starts with a basal node.
+<<>>=
+BasalNodes(TL84)
+# The first node in each chain
+first <- tc[,1]
+all(unique(first) %in% BasalNodes(TL84))  # TRUE
+@
+Tuesday Lake 1984 has a single top-level consumer so every trophic chain ends 
+with this consumer.
+<<>>=
+TopLevelNodes(TL84)
+# The last node in each chain
+last <- apply(tc, 1, function(row) row[max(which(""!=row))])
+unique(last)
+@
+Just as with \code{TLPS}, \code{TrophicChains} accepts a `node.properties' 
+parameter that you can use to add node properties to the returned. For example, 
+to get a table containing the $\log_{10}$-transformed body mass of each node 
+in every chain.
+<<>>=
+tc.with.log10M <- TrophicChains(TL84, node.properties='Log10M')
+@
+The food web of the Bengula marine ecosystem \citep{Yodzis1998JAnimEcol} does 
+not have any top-level nodes. All chains start with a basal node (by 
+definition) but, for this community, all chains end with an intermediate node.
+<<>>=
+data(Benguela)
+TopLevelNodes(Benguela)
+@
+<<>>=
+tc <- TrophicChains(Benguela)
+last <- apply(tc, 1, function(row) row[max(which(""!=row))])
+unique(last)
+IsIntermediateNode(Benguela)[unique(last)]
+@
+
+The second function - \code{TrophicChainsStats} - returns a list of simple 
+statistics about trophic chains.
+<<>>=
+chain.stats <- TrophicChainsStats(TL84)
+@
+The `chain.lengths' item contains the length of every unique food chain.
+<<>>=
+length(chain.stats$chain.lengths)    # 5,988 chains
+summary(chain.stats$chain.lengths)
+@
+The `node.pos.counts' item is a \code{matrix} of \code{NumberOfNodes} rows and 
+\code{1+max(chain.lengths)} columns. Elements are the number of chains in which 
+a node appear in that position.
+<<>>=
+dim(chain.stats$node.pos.counts)    # 56 nodes. Longest chain contains 8 nodes
+@
+Basal nodes only have counts in the first column.
+<<>>=
+chain.stats$node.pos.counts[BasalNodes(TL84),]
+@
+Consumers only have counts in columns two and higher.
+<<>>=
+chain.stats$node.pos.counts[c(IntermediateNodes(TL84),TopLevelNodes(TL84)),]
+@
+All counts are zero for isolated nodes.
+<<>>=
+chain.stats$node.pos.counts[IsolatedNodes(TL84),]
+@
+If your analysis requires only simple statistics about trophic chains, the 
+\code{TrophicChainsStats} function is more suitable than \code{TrophicChains} 
+because it is faster and requires less memory.
+<<>>=
+system.time(tc <- TrophicChains(TL84))
+system.time(stats <- TrophicChainsStats(TL84))
+@
+The difference in speed will be greater for communities that contain a large 
+number of nodes and trophic chains such as the Skipwith Pond dataset, which 
+has more than $10^5$ unique chains.
+
+\subsubsection{Large numbers of trophic chains}
+The number of possible trophic chains rapidy increases with the number of nodes 
+and links. Let's examine the relationship between number of trophic chains and 
+number of nodes communities in which every consumer eats every other node.
+<<>>=
+HighlyConnected <- function(n)
+{
+    # Returns a community containing a single producer and n consumers, all 
+    # of whom eat everything else
+    consumers <- paste('Consumer', 1:n)
+    tl <- data.frame(resource=c(rep('Producer', n), rep(consumers, each=n)), 
+                     consumer=consumers)
+    return (Community(nodes=data.frame(node=c('Producer',consumers)), 
+                      trophic.links=tl, 
+                      properties=list(title='test')))
+}
+
+# A list of communities of between 1 and 8 consumers
+n <- 8
+communities <- lapply(1:n, HighlyConnected)
+
+# A list of statistics about each community
+stats <- lapply(communities, TrophicChainsStats)
+
+# Extract the chain lengths
+cl <- lapply(stats, '[[', 'chain.lengths')
+
+# The number of chains
+n.chains <- sapply(cl, length)
+
+# The number of chains in each community
+cbind(n.consumers=1:n, longest.chain=sapply(cl, max), n.chains=n.chains)
+@
+So with one consumer there is one chain, two consumers - two chains, three 
+consumers - six chains, four consumers - 24 chains and so on. You may 
+recognise this sequence as factorial.
+<<>>=
+cbind(n.consumers=1:n, longest.chain=sapply(cl, max), n.chains=n.chains, 
+      factorial.n=factorial(1:n))
+@
+What happens if we have even more consumers?
+<<>>=
+n <- 20
+cbind(n.consumers=1:n, longest.chain=1:n, factorial.n=factorial(1:n))
+@
+The number of trophic chains quickly becomes too large to compute within 
+practical time and within available memory, and this for communities with just 
+a single producer.
+When computing chains, cheddar allocates memory as required, with a safety 
+limit to prevent too much of the system's memory from being consumed. 
+If you see an error message `Unable to compute paths' then this safety 
+limit has been reached. 
+The limit can be altered by setting the `cheddarMaxQueue' option.
+<<>>=
+# Set to a low number to illustrate the error
+options(cheddarMaxQueue=10)
+tryCatch(TrophicChains(TL84), error=print)
+
+# Default value
+options(cheddarMaxQueue=NULL)
+chains <- TrophicChains(TL84)
+@
+If you encounter this error message you can increase the value of 
+`cheddarMaxQueue' (from it's default of $1e7$), but it is likely that the 
+food-web is so complex that it will not be possible to compute all paths. 
+Setting `cheddarMaxQueue' to $0$ disables the safety limit.
+
+\subsubsection{Trophic level}
+\label{sec:trophic_level}
+Several different measures of trophic level are used (e.g.\ 
+\citealp{WilliamsAndMartinez2004AmNat, JonssonEtAl2005AER, 
+ZookEtAl2011JTheorBiol}.) 
+The \code{PreyAveragedTrophicLevel} function uses the matrix-inversion method 
+of \cite{Levine1980JTheorBiol} to compute trophic levels 
+\citep{WilliamsAndMartinez2004AmNat}. This method is very fast and accounts 
+for flow through loops. A different measure of trophic level is offered by the 
+\code{ChainAveragedTrophicLevel} function, which enumerates every unique food 
+chain in the web (using \code{TrophicChainsStats}) and computes the mean 
+position of each node in every chain \citep{WilliamsAndMartinez2004AmNat}. 
+The method of \code{ChainAveragedTrophicLevel} is the same as that described 
+as `trophic height' by \cite{JonssonEtAl2005AER} and the name 
+\code{TrophicHeight} is a synonym for \code{ChainAveragedTrophicLevel}. 
+\code{ChainAveragedTrophicLevel} might be noticeably slower than 
+\code{PreyAveragedTrophicLevel} for very large and/or highly connected food 
+webs.
+<<>>=
+tail(NPS(TL84, c('PreyAveragedTrophicLevel', 'ChainAveragedTrophicLevel')), 10)
+@
+Cheddar offers the six different measures of trophic level described by 
+\cite{WilliamsAndMartinez2004AmNat}. A function is provided for each one. 
+The \code{TrophicLevels} convenience function returns a matrix containing all 
+six.
+<<>>=
+tail(TrophicLevels(TL84), 10)
+@
+See the help page for \code{TrophicLevels} for more information on these 
+different measures.
+
+
+\subsubsection{Link strengths}
+\label{sec:link_strengths}
+Cheddar's data format allows zero, one or many measures of link strength to be 
+defined simply by adding additional columns to the trophic.links.csv file 
+(Section \ref{sec:representation}). It is also possible to define and use 
+theoretical measures of link strength. Cheddar's \code{PredationMatrix} and 
+\code{FlowBasedTrophicLevel} functions allow empirical and/or theoretical link 
+strengths to be used.
+
+The \code{Benguela} dataset contains empirical estimates of diet fraction for 
+each trophic link \citep{Yodzis1998JAnimEcol}, available as the `diet.fraction' 
+property.
+<<>>=
+data(Benguela)
+head(TLPS(Benguela))
+@
+A binary predation matrix contains just '0' and '1'. 
+<<>>=
+pm <- PredationMatrix(Benguela)
+@
+We can weight the predation matrix by empirical diet fractions.
+<<>>=
+pm <- PredationMatrix(Benguela, weight='diet.fraction')
+@
+These matrices are 29 x 29 and so are not shown for brevity.
+
+The \code{FlowBasedTrophicLevel} function uses the same matrix inversion 
+technique as \code{PreyAveragedTrophicLevel} and uses the `weight.by' node 
+property to provide an estimate of energy flow through each trophic link. 
+We can easily compare these two different ways of computing trophic level.
+<<>>=
+cbind(PreyAveragedTrophicLevel(Benguela), 
+      FlowBasedTrophicLevel(Benguela, weight.by='diet.fraction'))
+@
+Theoretical per capita interaction strengths can be computed from body-mass 
+ratios raised to a power, typically taken to be $2/3$ or $3/4$ 
+\citep{EmmersonAndRaffaelli2004JAnimEcol, ReumanAndCohen2005AER, 
+LayerEtAl2010AER}. We can define a function to compute these theoretical 
+interaction strengths and use it in computation of trophic levels.
+<<>>=
+InteractionStrength <- function(community)
+{
+    tlps <- TLPS(community, node.properties='M')
+    return ((tlps$consumer.M / tlps$resource.M)^3/4)
+}
+
+# The InteractionStrength() function can be used together with TLPS() to 
+# compute the theoretical interaction strength between each resource-consumer pair
+head(TLPS(Benguela, link.properties='InteractionStrength'))
+@
+We can use this measure of interaction strength to compute flow-based trophic 
+level.
+<<>>=
+cbind(PreyAveragedTrophicLevel(Benguela), 
+      FlowBasedTrophicLevel(Benguela, weight.by='diet.fraction'), 
+      FlowBasedTrophicLevel(Benguela, weight.by='InteractionStrength'))
+@
+The weighting functionality offered by the \code{PredationMatrix} and 
+\code{FlowBasedTrophicLevel} functions make it possible to use multiple 
+empirical and/or theoretical link strengths and interaction strengths in 
+analyses.
+
+\newpage
+\section{Community manipulations}
+\subsection{Node order}
+The ordering of nodes within a community can be important both for presentation 
+and analysis. Cheddar's \code{OrderCommunity} function reorders nodes and 
+returns a new community object. 
+\code{OrderCommunity} accepts names that meets the criteria of the 
+\code{properties} parameter of the \code{NPS} function. 
+This includes the names of `first-class' properties, such as $M$, 
+and the names of functions that take a single community and return a value for 
+each node, such as \code{Degree}, which returns the number of trophic links 
+for each node. The following examples order \code{TL84} by increasing body mass 
+and by increasing degree.
+<<>>=
+TL84.increasing.M <- OrderCommunity(TL84, 'M', title='Increasing M')
+head(NPS(TL84.increasing.M, c('M', 'Degree')))
+TL84.increasing.degree <- OrderCommunity(TL84, 'Degree', 
+                                         title='Increasing degree')
+head(NPS(TL84.increasing.degree, c('M', 'Degree')))
+@
+Similar to \R's \code{order} function, \code{OrderCommunity} can sort by more 
+than one name with subsequent names used to break ties. We can use this to sort 
+alphabetically by category and then by increasing $M$ within each category.
+<<>>=
+TL84.category.then.M <- OrderCommunity(TL84, 'category', 'M')
+head(NPS(TL84.category.then.M, c('category', 'M')))
+@
+
+\subsection{Node order and intervality}
+Visualising the food web as a predation matrix is central to many analyses and 
+theories. There has been much recent interest in the relationship between food 
+web structure and species' niches, in particular the role of body size on 
+determining a species' position in a food web and the effect on intervality - 
+a measure of the adjacency of resources and consumers in the food web 
+\citep{WilliamsAndMartinez2000Nature, StoufferEtAl2006PNAS, 
+ZookEtAl2011JTheorBiol}. We can use \code{OrderCommunity} to explore the effect 
+ordering species along different niche axes. The code fragment below creates 
+two new orderings of \code{TL84}, one by increasing body mass and the other by 
+increasing trophic level, with random ordering within ties for trophic level 
+\citep{ZookEtAl2011JTheorBiol}.
+<<>>=
+# Increasing M
+TL84.increasing.M <- OrderCommunity(TL84, 'M', title='Increasing M')
+new.order <- order(PreyAveragedTrophicLevel(TL84), sample(1:56))
+TL84.increasing.TL <- OrderCommunity(TL84, new.order=new.order, 
+                                     title='Increasing TL')
+@
+We could use any of Cheddar's different measure of trophic level 
+(Section \ref{sec:trophic_level}). 
+The \code{PlotPredationMatrix} function allows us to graphically compare the 
+effect of these different orderings.
+\begin{center}
+\SweaveOpts{width=8,height=4}
+\setkeys{Gin}{width=\textwidth}
+<<fig=TRUE>>=
+par(mfrow=c(1,2))
+PlotPredationMatrix(TL84.increasing.M)
+PlotPredationMatrix(TL84.increasing.TL)
+@
+\end{center}
+The total number of gaps in diets (columns) and consumers (rows) 
+\citep{StoufferEtAl2011JAnimEcol, ZookEtAl2011JTheorBiol}:
+<<>>=
+SumDietGaps(TL84.increasing.M)
+SumDietGaps(TL84.increasing.TL)
+SumConsumerGaps(TL84.increasing.M)
+SumConsumerGaps(TL84.increasing.TL)
+@
+The \code{MinimiseSumDietGaps} function implements simulated annealing 
+learning to minimise \code{SumDietGaps}, as described by 
+\cite{StoufferEtAl2006PNAS}. Simulated annealing learning is a stochastic 
+method so several optimisations might be required to find the global minimum; 
+this is done by setting the `n' parameter greater than $1$:
+\begin{center}
+\SweaveOpts{width=8,height=4}
+\setkeys{Gin}{width=\textwidth}
+<<fig=TRUE>>=
+par(mfrow=c(1,2))
+PlotPredationMatrix(TL84.increasing.M, main=SumDietGaps(TL84.increasing.M))
+res <- MinimiseSumDietGaps(TL84, n=10)
+PlotPredationMatrix(res$reordered, main=SumDietGaps(res$reordered))
+@
+\end{center}
+
+\newpage
+\noindent \code{MinimiseSumConsumerGaps} uses the same method to 
+minimise the gaps in each species' consumers \citep{ZookEtAl2011JTheorBiol}.
+\begin{center}
+\SweaveOpts{width=8,height=4}
+\setkeys{Gin}{width=\textwidth}
+<<fig=TRUE>>=
+par(mfrow=c(1,2))
+PlotPredationMatrix(TL84.increasing.M, 
+                    main=paste('Ordered by M - sum consumer gaps', 
+                               SumConsumerGaps(TL84.increasing.M)))
+res <- MinimiseSumConsumerGaps(TL84, n=10)
+PlotPredationMatrix(res$reordered, 
+                    main=paste('Optimised - sum consumer gaps', 
+                               SumConsumerGaps(res$reordered)))
+@
+\end{center}
+
+\subsection{Removing nodes}
+Isolated nodes are often removed from food-web analyses (e.g.\ 
+\citealp{JonssonEtAl2005AER}). \code{RemoveIsolatedNodes} is a convenience 
+function that returns a new \code{Community} with isolated nodes removed.
+<<>>=
+NumberOfNodes(TL84)
+IsolatedNodes(TL84)
+NumberOfTrophicLinks(TL84)
+
+TL84.no.isolated <- RemoveIsolatedNodes(TL84)
+NumberOfNodes(TL84.no.isolated)         # Six fewer species
+IsolatedNodes(TL84.no.isolated)         # No isolated species
+NumberOfTrophicLinks(TL84.no.isolated)  # Number of trophic links unchanged
+@
+The general-purpose \code{RemoveNodes} function returns a new 
+\code{Community} object with one or more nodes removed. 
+<<>>=
+NumberOfNodes(TL84)
+NumberOfTrophicLinks(TL84)
+
+# Remove the first ten nodes
+TL84.r <- RemoveNodes(TL84, 1:10)
+NumberOfNodes(TL84.r)
+NumberOfTrophicLinks(TL84.r)
+
+# Remove producers
+TL84.r <- RemoveNodes(TL84, 'producer'==NP(TL84, 'category'))
+NumberOfNodes(TL84.r)
+NumberOfTrophicLinks(TL84.r)
+
+# Remove species by name
+to.remove <- c("Cryptomonas sp. 1", "Chroococcus dispersus", 
+               "Unclassified flagellates", "Chromulina sp.", 
+               "Selenastrum minutum", "Trachelomonas sp.")
+TL84.r <- RemoveNodes(TL84, to.remove)
+NumberOfNodes(TL84.r)
+NumberOfTrophicLinks(TL84.r)
+
+# Three different ways of removing node 56 (Umbra limi)
+TL84.ra <- RemoveNodes(TL84, 56)
+TL84.rb <- RemoveNodes(TL84, 'Umbra limi')
+TL84.rc <- RemoveNodes(TL84, c(rep(FALSE,55), TRUE))
+
+identical(TL84.ra, TL84.rb)  # TRUE
+identical(TL84.ra, TL84.rc)  # TRUE
+@
+The \code{RemoveNodes} function takes an argument called `method', which 
+indicates how removals should be propogated through the food web. 
+If `method' is `direct' (the default), only the nodes in \code{remove} are 
+removed. If `method' is `secondary', secondarily extinct nodes - those that 
+directly consume one or more nodes in `remove' and that no longer have any 
+resources (except themselves) after the removal - are also removed. 
+If `method' is `cascade', a multistep version of `secondary' is applied. This 
+has the effect of propogating extinctions though the community - all consumers 
+that are ultimately dependent upon all species in `remove', and upon no other 
+nodes (except themselves), will be removed.
+<<>>=
+# The behaviours of the different methods
+NumberOfNodes(TL84)         # 56 nodes in total
+length(BasalNodes(TL84))    # 25 basal nodes
+length(IsolatedNodes(TL84)) #  6 isolated nodes
+
+RemoveNodes(TL84, BasalNodes(TL84)) # 56 - 25 = 31 nodes remain
+RemoveNodes(TL84, BasalNodes(TL84), method='secondary') # 14 nodes remain
+RemoveNodes(TL84, BasalNodes(TL84), method='cascade')   # The 6 isolated nodes remain
+@
+
+\subsection{Removing cannibalistic links}
+\code{RemoveCannibalisticLinks} returns a new \code{Community} without those 
+trophic links in which a node consumes itself.
+<<>>=
+NumberOfNodes(TL84)
+Cannibals(TL84)         # 5 species
+NumberOfTrophicLinks(TL84)
+
+TL84.no.cannibals <- RemoveCannibalisticLinks(TL84)
+NumberOfNodes(TL84.no.cannibals)         # Number of nodes unchanged
+Cannibals(TL84.no.cannibals)             # No species
+NumberOfTrophicLinks(TL84.no.cannibals)  # 5 fewer trophic links
+@
+
+\subsection{Lumping nodes}
+\label{sec:lumping_nodes}
+Certain analyses call for food-web nodes to be merged. 
+In order to reduce biases, nodes that share the same resources and consumers, 
+so-called `trophic species', are commonly lumped together 
+\citep{BriandAndCohen1984Nature, PimmEtAl1991Nature, 
+WilliamsAndMartinez2000Nature}. The \code{LumpTrophicSpecies} performs this 
+task and returns a new \code{Community} object.
+<<>>=
+NumberOfNodes(TL84)
+
+TL84.lumped <- LumpTrophicSpecies(TL84)
+
+length(unique(TrophicSpecies(TL84)))    # 22 trophic species in TL84...
+NumberOfNodes(TL84.lumped)              # ... and 22 nodes in the lumped web
+@
+
+\newpage
+\noindent The plot below shows the lumped and unlumped webs.
+\begin{center}
+\SweaveOpts{width=8,height=4}
+\setkeys{Gin}{width=\textwidth}
+<<fig=TRUE>>=
+par(mfrow=c(1,2))
+plot(TL84)
+plot(TL84.lumped, xlim=range(Log10M(TL84)), ylim=range(Log10N(TL84)))
+@
+\end{center}
+The \code{LumpNodes} function is a more general-purpose function that allows 
+any nodes in a community to be lumped together. It takes a parameter `lump', 
+which should be a vector of length \code{NumberOfNodes}. Nodes with the same 
+value of `lump' will be merged together.
+This example lumps together isolated species in TL84.
+<<>>=
+length(which(IsIsolatedNode(TL84)))  # 6 isolated species
+IsolatedNodes(TL84)                  # Names of isolated nodes
+
+lump <- NP(TL84, 'node')             # Existing node names
+
+# Give isolated nodes the same lump value
+lump[IsolatedNodes(TL84)] <- 'Isolated nodes lumped together'
+TL84.lumped <- LumpNodes(TL84, lump)
+
+NumberOfNodes(TL84)         # 56 nodes in unlumped web
+NumberOfNodes(TL84.lumped)  # 51 nodes in lumped web
+
+IsolatedNodes(TL84.lumped)  # A single node
+@
+By default, numeric values are weighted by numerical abundance, $N$. 
+
+This trivial example shows that no nodes are lumped if values in lump are 
+unique to each node.
+<<>>=
+lump <- NP(TL84, 'node')
+identical(TL84, LumpNodes(TL84, lump, title=CP(TL84, 'title')))
+@
+The Ythan Estuary dataset contains two species that are split by life stage: 
+\textit{Platichthys flesus} (european flounder) and 
+\textit{Somateria mollissima} (common eider). The code fragment below shows how 
+to lump these in to a single node for each species. 
+<<>>=
+data(YthanEstuary)
+
+# The names of nodes in YthanEstuary
+lump <- NP(YthanEstuary, 'node')
+
+# European flounder:
+# "Platichthys flesus" and "Platichthys flesus (juvenile)"
+# Lump these in to one node
+lump["Platichthys flesus (juvenile)"==lump] <- "Platichthys flesus"
+
+# Common eider:
+# "Somateria mollissima" and "Somateria mollissima (juvenile)"
+# Lump these in to one node
+lump["Somateria mollissima (juvenile)"==lump] <- "Somateria mollissima"
+YthanEstuary.lumped <- LumpNodes(YthanEstuary, lump)
+
+NumberOfNodes(YthanEstuary)         # 92
+NumberOfNodes(YthanEstuary.lumped)  # 90
+@
+
+\newpage
+\noindent Graphically compare the two communities.
+\begin{center}
+\SweaveOpts{width=8,height=4}
+\setkeys{Gin}{width=\textwidth}
+<<fig=TRUE>>=
+# Plot the original and lumped communities
+par(mfrow=c(1,2))
+plot(YthanEstuary, highlight.nodes=c("Platichthys flesus", 
+                                     "Platichthys flesus (juvenile)", 
+                                     "Somateria mollissima", 
+                                     "Somateria mollissima (juvenile)"), 
+     show.web=FALSE)
+plot(YthanEstuary.lumped, highlight.nodes=c("Platichthys flesus", 
+                                            "Somateria mollissima"), 
+     show.web=FALSE)
+@
+\end{center}
+
+\noindent The default behaviour of \code{LumpNodes} and 
+\code{LumpTrophicSpecies} is to aggregate numeric node properties by computing 
+the $N$-weighted mean.
+<<>>=
+NPS(YthanEstuary.lumped)["Platichthys flesus", c('M','N')]
+
+# These values were computed as follows
+nps <- NPS(YthanEstuary)
+M <- nps[c("Platichthys flesus", "Platichthys flesus (juvenile)"), 'M']
+N <- nps[c("Platichthys flesus", "Platichthys flesus (juvenile)"), 'N']
+
+# Arithmetic mean of N
+mean(N)
+
+# N-weighted mean of M
+weighted.mean(M, N)
+@
+
+\noindent The `weight.by' parameter controls this behaviour:
+<<>>=
+YthanEstuary.lumped2 <- LumpNodes(YthanEstuary, lump, weight.by=NULL)
+NPS(YthanEstuary.lumped2)["Platichthys flesus", c('M','N')]
+
+# Computed as the arithmetic means of M and N
+mean(M)
+mean(N)
+
+@
+
+
+\bibliographystyle{plainnat}
+\bibliography{cheddar} 
+
+\end{document}
+
