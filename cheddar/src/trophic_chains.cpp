@@ -4,6 +4,7 @@
 #include <queue>
 #include <map>
 #include <algorithm>
+#include <cstring>
 
 #include "cheddar.h"
 #include "cheddar_exception.h"
@@ -179,7 +180,7 @@ public:
     if(n_chains_found_ <= ncols_ && path.size()<=IntVector::size_type(nrows_))
     {
       const IntVector::size_type path_length(path.size());
-      std::memcpy(chains_ + n_chains_found_ * nrows_, &path[0],
+      memcpy(chains_ + n_chains_found_ * nrows_, &path[0],
                   path_length*sizeof(IntVector::value_type));
       n_chains_found_ += 1;
     }
@@ -564,7 +565,7 @@ node_pos_counts:  an array of n_chains * longest integers. Will contain
     }
     else
     {
-      std::memcpy(chain_lengths, &visitor.chain_lengths_[0], sizeof(int) * *n_chains);
+      memcpy(chain_lengths, &visitor.chain_lengths_[0], sizeof(int) * *n_chains);
       for(ChainStatsVisitor::CountVector::size_type node=0;
           node<visitor.counts_.size(); ++node)
       {
@@ -575,7 +576,7 @@ node_pos_counts:  an array of n_chains * longest integers. Will contain
         }
         else
         {
-          std::memcpy(node_pos_counts + node * *longest, &v[0],
+          memcpy(node_pos_counts + node * *longest, &v[0],
                  sizeof(int) * *longest);
         }
       }

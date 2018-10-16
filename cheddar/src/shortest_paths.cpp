@@ -4,6 +4,7 @@
 #include <R.h>
 #include <Rmath.h>
 #include <vector>
+#include <cstring>
 
 #include "cheddar.h"
 
@@ -157,7 +158,7 @@ resources_length: the number of ints in resources
     IntVector res(resources, resources + *resources_length);
     DoubleVector w(weights, weights + (*node_count * *node_count));
     DoubleVector r = dijkstra(con, res, w, *node_count);
-    std::memcpy(lengths, &r[0], sizeof(double) * *node_count * *node_count);
+    memcpy(lengths, &r[0], sizeof(double) * *node_count * *node_count);
     *status = 0;        // Normal exit
   }
   catch(const std::exception &e)

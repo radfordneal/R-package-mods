@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <functional>
 #include <vector>
+#include <cstring>
 
 #include "cheddar.h"
 #include "cheddar_exception.h"
@@ -320,7 +321,7 @@ template <typename Problem> class SimulatedAnnealing
             else
             {
               const double unif = rand_pool_.fetch_rand();
-              const double p = std::exp(-(cost_consider-cost_current)/T);
+              const double p = exp(-(cost_consider-cost_current)/T);
               DEBUG(Rprintf("Accept if p [%.6f] > unif [%.6f] at T [%.4f]\n",
                             p, unif, T));
               if(p > unif)
@@ -526,7 +527,7 @@ void minimise_sum_diet_gaps(const int *network,
       }
       else
       {
-        std::memcpy(best, &res.first[0], sizeof(int) * *nodes);
+        memcpy(best, &res.first[0], sizeof(int) * *nodes);
 
         // Overflow of res.second is not possible because a matrix of size
         // nodes by nodes matrix can have at most (nodes-1)^2 gaps.

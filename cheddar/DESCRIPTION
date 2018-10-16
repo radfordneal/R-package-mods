@@ -1,11 +1,12 @@
 Package: cheddar
 Type: Package
 Title: Analysis and Visualisation of Ecological Communities
-Version: 0.1-633
+Version: 0.1-633-909
 Date: 2018-06-09
 Author: Lawrence Hudson with contributions from Dan Reuman and Rob Emerson
 Maintainer: Lawrence Hudson <quicklizard@googlemail.com>
 Description: Provides a flexible, extendable representation of an ecological community and a range of functions for analysis and visualisation, focusing on food web, body mass and numerical abundance data. Allows inter-web comparisons such as examining changes in community structure over environmental, temporal or spatial gradients.
+ Modified for pqR to be compatible with C++98 and to disable test that relies on deparsing that varies with R version (none being correct, since correct operation is impossible).
 License: BSD_2_clause + file LICENSE
 LazyLoad: yes
 URL: https://github.com/quicklizard99/cheddar/
