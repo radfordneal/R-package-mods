@@ -1,0 +1,275 @@
+# Author: Robert J. Hijmans
+# Date : July 2011
+# Version 1.0
+# Licence GPL v3
+
+
+
+if (!isGeneric("as.data.frame")) {
+	setGeneric("as.data.frame", function(x, row.names = NULL, optional = FALSE, ...)
+		standardGeneric("as.data.frame"))
+}	
+
+
+.insertColsInDF <- function(x, y, col, combinenames=TRUE) {
+	cnames <- NULL
+	if (combinenames) {
+		if (ncol(y) > 1) {
+			cnames <- paste(colnames(x)[col], '_', colnames(y), sep='')
+		}
+	}
+	if (ncol(y) == 1) {
+		x[, col] <- y
+		return(x)
+	} else if (col==1) {
+		z <- cbind(y, x[, -1, drop=FALSE])
+	} else if (col==ncol(x)) {
+		z <- cbind(x[, -ncol(x), drop=FALSE], y)
+	} else {
+		z <- cbind(x[,1:(col-1), drop=FALSE], y, x[,(col+1):ncol(x), drop=FALSE])
+	}
+	if (!is.null(cnames)) {
+		colnames(z)[col:(col+ncol(y)-1)] <- cnames
+	}
+	z
+}
+
+
+setMethod('as.data.frame', signature(x='Raster'), 
+	function(x, row.names = NULL, optional = FALSE, xy=FALSE, na.rm=FALSE, ...) {
+
+		if (!canProcessInMemory(x, 4) & na.rm) {
+			r <- raster(x)
+			ncx <- ncol(r)
+			tr <- blockSize(x)
+			pb <- pbCreate(tr$n, label='as.data.frame', ...)
+			x <- readStart(x)
+			v <- NULL
+			for (i in 1:tr$n) {
+				start <- (tr$row[i]-1) * ncx + 1
+				end <- start + tr$nrows[i] * ncx - 1
+				vv <- cbind(start:end, getValues(x, row=tr$row[i], nrows=tr$nrows[i]))
+				if (xy) {
+					XY <- data.frame(xyFromCell(r, start:end))
+					vv <- na.omit(vv, XY)
+				}
+				v <- rbind(v, vv)
+				pbStep(pb, i) 	
+			}
+			x <- readStop(x)
+		} else {
+			v <- getValues(x)
+			if (xy) {
+				XY <- data.frame(xyFromCell(x, 1:ncell(x)))
+				v <- cbind(XY, v)
+			}
+			if (na.rm) {
+				v <- na.omit(cbind(1:ncell(x), v))
+			}
+		}
+		
+		v <- as.data.frame(v, row.names=row.names, optional=optional, ...)
+		if (na.rm) {
+			rownames(v) <- as.character(v[,1])
+			v <- v[,-1,drop=FALSE]
+		} 
+		
+		if (nlayers(x) == 1) {
+			colnames(v)[ncol(v)] <- names(x)  # for nlayers = 1
+		}
+				
+		i <- is.factor(x)
+		if (any(is.factor(x))) {
+			if (ncol(v) == 1) {
+				v <- data.frame( factorValues(x, v[,1], 1))
+		#		j <- which(sapply(v, is.character))
+		#		if (length(j) > 0) {
+		#			for (jj in j) {
+		#				v[, jj] <- as.factor(v[,jj])
+		#			}
+		#		}
+			} else {
+				nl <- nlayers(x)
+				if (ncol(v) > nl) {
+					rnge1 <- 1:(ncol(v)-nl)
+					rnge2 <- (ncol(v)-nl+1):ncol(v)
+					v <- cbind(v[, rnge1], .insertFacts(x, v[, rnge2], 1:nl))
+				} else {
+					v <- .insertFacts(x, v, 1:nl)
+				}
+			}
+		}
+		v
+	}
+)
+
+
+
+setMethod('as.data.frame', signature(x='SpatialPolygons'), 
+	function(x, row.names=NULL, optional=FALSE, xy=FALSE, centroids=TRUE, sepNA=FALSE, ...) {
+		
+		if (!xy) {
+			if (.hasSlot(x, 'data')) {
+				return( x@data )
+			} else {
+				return(NULL)
+			}
+		}		
+		if (centroids) {
+			xy <- coordinates(x)
+			xy <- cbind(1:nrow(xy), xy)
+			colnames(xy) <- c('object', 'x', 'y')
+			xy <- as.data.frame(xy, row.names=row.names, optional=optional, ...)
+			if (.hasSlot(x, 'data')) {
+				return( cbind(xy, x@data ) )
+			} else {
+				return(xy)
+			}
+		}
+		
+		nobs <- length(x@polygons)
+		objlist <- list()
+		cnt <- 0
+		if (sepNA) {
+			sep <- rep(NA,5)
+			for (i in 1:nobs) {
+				nsubobs <- length(x@polygons[[i]]@Polygons)
+				ps <- lapply(1:nsubobs, 
+						function(j)
+							rbind(cbind(j, j+cnt, x@polygons[[i]]@Polygons[[j]]@hole, x@polygons[[i]]@Polygons[[j]]@coords), sep)
+						)
+				objlist[[i]] <- cbind(i, do.call(rbind, ps))
+				cnt <- cnt+nsubobs
+			}
+		} else {
+			for (i in 1:nobs) {
+				nsubobs <- length(x@polygons[[i]]@Polygons)
+				ps <- lapply(1:nsubobs, 
+						function(j) 
+							cbind(j, j+cnt, x@polygons[[i]]@Polygons[[j]]@hole, x@polygons[[i]]@Polygons[[j]]@coords)
+						)
+				objlist[[i]] <- cbind(i, do.call(rbind, ps))
+				cnt <- cnt+nsubobs
+			}
+		}
+		
+		obs <- do.call(rbind, objlist)
+		colnames(obs) <- c('object', 'part', 'cump', 'hole', 'x', 'y')
+		rownames(obs) <- NULL
+		
+		obs <- as.data.frame(obs, row.names=row.names, optional=optional, ...)
+		
+		if (.hasSlot(x, 'data')) {
+			d <- x@data
+			d <- data.frame(object=1:nrow(x), x@data)
+			obs <- merge(obs, d, by=1)
+		} 
+		if (sepNA) {
+			obs[is.na(obs[,2]), ] <- NA
+		}
+		return( obs )
+	}
+)
+
+
+
+setMethod('as.data.frame', signature(x='SpatialLines'), 
+	function(x, row.names=NULL, optional=FALSE, xy=FALSE, sepNA=FALSE, ...) {
+		
+		if (!xy) {
+			if (.hasSlot(x, 'data')) {
+				return( x@data )
+			} else {
+				return(NULL)
+			}
+		}
+				
+		nobj <- length(x@lines)
+		objlist <- list()
+		cnt <- 0
+		if (sepNA) {
+			sep <- rep(NA, 4)
+			for (i in 1:nobs) {
+				nsubobj <- length(x@lines[[i]]@Lines)
+				ps <- lapply(1:nsubobj, 
+						function(j) 
+							rbind(cbind(j, j+cnt, x@lines[[i]]@Lines[[j]]@coords), sep)
+						)
+				objlist[[i]] <- cbind(i, do.call(rbind, ps))
+				cnt <- cnt+nsubobj
+			}
+		} else {
+			for (i in 1:nobj) {
+				nsubobj <- length(x@lines[[i]]@Lines)
+				ps <- lapply(1:nsubobj, function(j) cbind(j, j+cnt, x@lines[[i]]@Lines[[j]]@coords))
+				objlist[[i]] <- cbind(i, do.call(rbind, ps))
+				cnt <- cnt+nsubobj
+			}
+		}
+		obs <- do.call(rbind, objlist)
+		colnames(obs) <- c('object', 'part', 'cump', 'x', 'y')
+		rownames(obs) <- NULL
+
+		obs <- as.data.frame(obs, row.names=row.names, optional=optional, ...)
+		
+		if (.hasSlot(x, 'data')) {
+			d <- x@data
+			d <- data.frame(object=1:nrow(x), x@data)
+			obs <- merge(obs, d, by=1)
+		} 
+
+		if (sepNA) {
+			obs[is.na(obs[,2]), ] <- NA
+		}
+		return (obs)
+	}
+)
+
+
+setMethod('as.data.frame', signature(x='SpatialPoints'), 
+	function(x, row.names=NULL, optional=FALSE, xy=TRUE, ...) {
+
+		if (!xy) {
+			if (.hasSlot(x, 'data')) {
+				return( x@data )
+			} else {
+				return(NULL)
+			}
+		}
+				
+		nobj <- length(x)
+		d <- coordinates(x)
+		if (.hasSlot(x, 'data')) {
+			d <- cbind(d, x@data)
+		}
+
+		colnames(d)[1:2] <- c('x', 'y')
+		rownames(d) <- NULL
+		as.data.frame(d, row.names=row.names, optional=optional, ...)
+	}
+)
+
+
+
+#setMethod('as.data.frame', signature(x='SpatialPoints'), 
+#	function(x, row.names=NULL, optional=FALSE, xy=TRUE, ...) {
+#		
+#		if (!xy) {
+#			if (.hasSlot(x, 'data')) {
+#				return( x@data )
+#			} else {
+#				return(NULL)
+#			}
+#		} else {
+#			xy <- coordinates(x)
+#			xy <- cbind(1:nrow(xy), xy)
+#			colnames(xy) <- c('object', 'x', 'y')
+#			xy <- as.data.frame(xy, row.names=row.names, optional=optional, ...)
+#			if (.hasSlot(x, 'data')) {
+#				xy <- data.frame(xy, x@data )
+#			} 
+#			return(xy)
+#		}
+#	}
+#)
+		
