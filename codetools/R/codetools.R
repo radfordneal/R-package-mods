@@ -823,9 +823,8 @@ incLocalSrcInfo <- function(vn, w) {
     new <- list(srcfile = if (is.null(w$srcfile)) NA_character_ else w$srcfile,
                 frow = if (is.null(w$frow)) NA_integer_ else w$frow,
                 lrow = if (is.null(w$lrow)) NA_integer_ else w$lrow)
-    new <- as.data.frame(new, stringsAsFactors = FALSE)
     if (is.null(value))
-        value <- new
+        value <- as.data.frame(new, stringsAsFactors = FALSE)
     else
         value <- rbind(value, new)
     assign("srcinfo", value, entry)
