@@ -1,0 +1,66 @@
+# Author: Robert J. Hijmans
+# Date : December 2009
+# Version 0.1
+# Licence GPL v3
+
+
+if (!isGeneric("shapefile")) {
+	setGeneric("shapefile", function(x, ...)
+		standardGeneric("shapefile"))
+}	
+
+
+setMethod('shapefile', signature(x='character'), 
+	function(x, stringsAsFactors=FALSE, verbose=FALSE, ...) {
+		.requireRgdal() 
+		stopifnot(file.exists(extension(x, '.shp')))
+		stopifnot(file.exists(extension(x, '.shx')))
+		stopifnot(file.exists(extension(x, '.dbf')))
+		fn <- extension(basename(x), '')
+		readOGR(dirname(x), fn, stringsAsFactors=stringsAsFactors, verbose=verbose, ...) 		
+	}
+)
+
+
+setMethod('shapefile', signature(x='Spatial'), 
+	function(x, filename='', overwrite=FALSE, ...) {
+		.requireRgdal() 
+		stopifnot(filename != '')
+		extension(filename) <- '.shp'
+		if (file.exists(filename)) {
+			if (!overwrite) {
+				stop('file exists, use overwrite=TRUE to overwrite it')
+			}
+		}
+		layer <- basename(filename)
+		extension(layer) <- ''
+		if (!inherits(x, 'Spatial')) {
+			stop('To write a shapefile you need to provide an object of class Spatial*')
+		} else {
+			if (inherits(x, 'SpatialPixels')) {
+				if (.hasSlot(x, 'data')) {
+					x <- as(x, 'SpatialPointsDataFrame')
+				} else {
+					x <- as(x, 'SpatialPoints')				
+				}
+			} else if (inherits(x, 'SpatialGrid')| inherits(x, 'SpatialPixels')) {
+				stop('These data cannot be written to a shapefile')
+			}
+			
+			if (!.hasSlot(x, 'data')) {
+				if (inherits(x, 'SpatialPolygons')) {
+					x <- SpatialPolygonsDataFrame(x, data.frame(ID=1:length(row.names(x))))
+				} else if (inherits(x, 'SpatialLines')) {
+					x <- SpatialLinesDataFrame(x, data.frame(ID=1:length(row.names(x))))
+				} else if (inherits(x, 'SpatialPoints')) {
+					x <- SpatialPointsDataFrame(x, data.frame(ID=1:length(row.names(x))))
+				} else {
+					stop('These data cannot be written to a shapefile')
+				}
+			}
+		}
+		writeOGR(x, filename, layer, driver='ESRI Shapefile', overwrite_layer=overwrite, ...)
+	}
+)
+
+
