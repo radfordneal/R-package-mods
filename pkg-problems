@@ -1,0 +1,20 @@
+data.table 1.11.8
+
+  Has horrible kludge to compensate for using SET_LENGTH, undone
+  in version here.
+
+  Has horrible kludges for its reference semantics, including
+  checking whether modified object is named "*tmp*".  Not readily
+  fixable.
+
+RandomFields 2.0.71
+
+  Abuses DUP=FALSE.
+
+OData 0.6
+
+  Maybe just a problem with http to https redirection for example?
+
+TTR 0.23-0
+
+  Maybe just a problem with http to https redirection for example?
