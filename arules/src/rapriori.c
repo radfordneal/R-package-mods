@@ -740,7 +740,7 @@ void sort_ngCMatrix(SEXP x) {
     SEXP px, ix;
 
     px = GET_SLOT(x, install("p"));
-    ix = GET_SLOT(x, install("i"));
+    PROTECT (ix = duplicate(GET_SLOT(x, install("i"))));
 
     f = INTEGER(px)[0];
     for (i = 1; i < LENGTH(px); i++) {
@@ -748,6 +748,9 @@ void sort_ngCMatrix(SEXP x) {
 	R_isort(INTEGER(ix)+f, l-f);
 	f = l;
     }
+
+    SET_SLOT(x, install("i"), ix);
+    UNPROTECT(1);
 }
 
 SEXP returnObject(RULESET *set, SEXP dim, ARparameter *param, SEXP itemInfo)
@@ -994,37 +997,45 @@ SEXP rapriori(SEXP x, SEXP y, SEXP dim, SEXP parms, SEXP control, SEXP app, SEXP
 
 	if ((param.target == TT_HEDGE) & param.ext) {
 		warning("No extended measure available.\n");
-		LOGICAL(GET_SLOT(parms, install("ext")))[0] = param.ext = 0;
+                SEXP install_ext = install("ext");
+                SET_SLOT(parms, install_ext, ScalarLogical(param.ext = 0));
 	}
 	if ((param.target != TT_RULE) & param.aval) {
 		warning("No additional measure available.\n");
-		LOGICAL(GET_SLOT(parms, install("aval")))[0] = param.aval= 0;
+                SEXP install_aval = install("aval");
+                SET_SLOT(parms, install_aval, ScalarLogical(param.aval= 0));
 		param.arem = EM_NONE;
 		SET_SLOT(parms, install("arem"), ScalarString(mkChar("none")));
 	}
 	if (param.arem == EM_NONE)   {       /* if no add. rule eval. measure, */
-		REAL(GET_SLOT(parms, install("minval")))[0] = param.minval = 0;
+                SEXP install_minval = install("minval");
+                SET_SLOT(parms, install_minval, ScalarReal(param.minval = 0));
 		if (param.aval) {
 			warning("No additional measure available.\n");		
-			LOGICAL(GET_SLOT(parms, install("aval")))[0] = param.aval = 0;
+                        SEXP install_aval = install("aval");
+                        SET_SLOT(parms, install_aval, ScalarLogical(param.aval= 0));
 			/* clear the corresp. output flag */
 		}
 	}
 	if ((param.minval < 0) || ((param.arem != EM_AIMP) && (param.minval > 1)))
 		{cleanup(); error(msgs(E_MVAL, param.minval));}      /* check the measure parameter */
-	if      (param.target == TT_HEDGE){ /* in hyperedge mode */
-		REAL(GET_SLOT(parms, install("minval")))[0] = param.minval = param.conf;
-		REAL(GET_SLOT(parms, install("confidence")))[0] = param.conf = 1;
+	if (param.target == TT_HEDGE){ /* in hyperedge mode */
+                SEXP install_minval = install("minval");
+                SET_SLOT(parms, install_minval, ScalarReal(param.minval = param.conf));
+                SEXP install_confidence = install("confidence");
+                SET_SLOT(parms, install_confidence, ScalarReal(param.conf = 1));
 	}/* adapt the parameters */
 	else if (param.target <= TT_CLSET){ /* in item set mode neutralize */
-		LOGICAL(GET_SLOT(parms, install("originalSupport")))[0] = param.rsdef = IST_BOTH; 
-		REAL(GET_SLOT(parms, install("confidence")))[0] = param.conf = 1;
+                SEXP install_originalSupport = install("originalSupport");
+                SET_SLOT(parms, install_originalSupport, ScalarLogical(param.rsdef = IST_BOTH));
+                SEXP install_confidence = install("confidence");
+                SET_SLOT(parms, install_confidence, ScalarReal(param.conf = 1));
 		
 	}/* rule specific settings */
 	if ((param.filter <= -1) || (param.filter >= 1)) {
 		warning("Parameter 'filter' set to 0.\n");
-		REAL(GET_SLOT(control, install("filter")))[0] = param.filter = 0;
-				
+                SEXP install_filter = install("filter");
+                SET_SLOT(parms, install_filter, ScalarReal(param.filter = 0));
 	}
 
 	/* --- create item set and transaction set --- */
@@ -1053,8 +1064,9 @@ SEXP rapriori(SEXP x, SEXP y, SEXP dim, SEXP parms, SEXP control, SEXP app, SEXP
   	createRules(istree, &param);
 	ruleset->cnt = is_cnt(itemset);
 	ruleset->tacnt = in.tnb;
- 	SET_SLOT(parms, install("maxlen"), allocVector(INTSXP, 1)); 
- 	INTEGER(GET_SLOT(parms, install("maxlen")))[0] = maxlen;
+        SEXP install_maxlen = install("maxlen");
+ 	SET_SLOT(parms, install_maxlen, allocVector(INTSXP, 1)); 
+ 	INTEGER(GET_SLOT(parms, install_maxlen))[0] = maxlen;
 	
 	t = clock();
 	if (param.verbose) Rprintf("creating S4 object  ... ");
