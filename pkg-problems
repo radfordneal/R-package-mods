@@ -18,3 +18,14 @@ OData 0.6
 TTR 0.23-0
 
   Maybe just a problem with http to https redirection for example?
+
+arules
+
+  Later versions incorporate internal subscript code - very bad idea!
+  arulesSequences is incompatible with earlier arules due to wanting
+  to use a logical subscript that isn't implemented.
+
+copula 0.99-2
+
+  Uses A..Z as a variable name.  So needs R_PARSE_DOTDOT=FALSE to
+  install.
