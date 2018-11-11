@@ -47,8 +47,11 @@ hclust.vector <- function(X, method='single', members=NULL, metric='euclidean', 
     stop("Invalid metric.")
   if (metric == -1)
     stop("Ambiguous metric.")
-  if (metric == 4 && getRversion() < "3.5.0")
-    metric <- as.integer(7) # special metric code for backwards compatibility
+
+# pqR has the fixed canberra formula from R-3.5.0, so don't do this.
+#
+#  if (metric == 4 && getRversion() < "3.5.0")
+#    metric <- as.integer(7) # special metric code for backwards compatibility
 
   if (methodidx!=1 && metric!=1)
     stop("The Euclidean methods 'ward', 'centroid' and 'median' require the 'euclidean' metric.")

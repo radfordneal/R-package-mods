@@ -1,7 +1,7 @@
 Package: fastcluster
 Encoding: UTF-8
 Type: Package
-Version: 1.1.25
+Version: 1.1.25-909
 Date: 2018-05-29
 Title: Fast Hierarchical Clustering Routines for R and 'Python'
 Authors@R: c(person("Daniel", "Müllner", email = "daniel@danifold.net", role = c("aut", "cph", "cre")),
@@ -10,7 +10,7 @@ Copyright: Until package version 1.1.23: © 2011 Daniel Müllner
         <http://danifold.net>. All changes from version 1.1.24 on: ©
         Google Inc. <http://google.com>.
 Enhances: stats, flashClust
-Depends: R (>= 3.0.0)
+Depends: R (>= 2.15.1)
 Description: This is a two-in-one package which provides interfaces to
         both R and 'Python'. It implements fast hierarchical, agglomerative
         clustering routines. Part of the functionality is designed as drop-in
@@ -24,6 +24,8 @@ Description: This is a two-in-one package which provides interfaces to
         Based on the present package, Christoph Dalitz also wrote a pure 'C++'
         interface to 'fastcluster':
         <http://informatik.hsnr.de/~dalitz/data/hclust>.
+        For pqR, changed Depends to allow pqR use, and disabled backwards
+        compatibility check for canberra method, since pqR has new formula.
 License: FreeBSD | GPL-2 | file LICENSE
 URL: http://danifold.net/fastcluster.html
 NeedsCompilation: yes
